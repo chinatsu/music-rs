@@ -2,6 +2,7 @@
 /* See the UUID Version 7 specification at
    https://www.rfc-editor.org/rfc/rfc9562#name-uuid-version-7 */
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 /* Main function to generate a uuidv7 value with millisecond precision */
 CREATE FUNCTION uuidv7(timestamptz DEFAULT clock_timestamp()) RETURNS uuid
