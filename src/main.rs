@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
 
     let router = Router::new()
         .route("/", get(routes::get_albums))
-        .route("/", post(routes::add_albums))
+        .route("/update", post(routes::add_albums))
         .route("/date/{date}", get(routes::get_albums_for_date))
         .route("/genre/{genres}", get(routes::get_albums_for_genre))
         .with_state(ApiContext { db });
