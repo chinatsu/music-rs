@@ -13,6 +13,7 @@ pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
     let artists = add_artists(&album.artists, db).await?;
 
     add_album_artists(&inserted_album, &artists, db).await?;
+    add_album_genres(&inserted_album, &genres, db).await?;
     Ok(Album {
         id: inserted_album.id,
         title: inserted_album.title,
@@ -160,6 +161,23 @@ async fn add_album_artists(
             "INSERT INTO album_artists(album_id, artist_id) VALUES ($1, $2)",
             album.id,
             artist.id
+        )
+        .execute(db)
+        .await?;
+    }
+    Ok(())
+}
+
+async fn add_album_genres(
+    album: &InsertedAlbum,
+    genres: &Vec<Genre>,
+    db: &PgPool,
+) -> Result<()> {
+    for genre in genres {
+        query!(
+            "INSERT INTO album_genres(album_id, genre_id) VALUES ($1, $2)",
+            album.id,
+            genre.id
         )
         .execute(db)
         .await?;
