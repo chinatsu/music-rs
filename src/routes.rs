@@ -1,0 +1,38 @@
+use axum::{
+    Json,
+    extract::{Path, State},
+};
+use time::{format_description, Date};
+
+use crate::{db, types::{Album, NewAlbum}, ApiContext, Result};
+
+
+pub async fn add_albums(
+    State(state): State<ApiContext>,
+    Json(payload): Json<Vec<NewAlbum>>,
+) -> Result<Json<Vec<Album>>> {
+    let stream = payload.iter().map(async |album| Ok(db::make_album(&state.db, album).await?));
+    let albums: Result<Vec<Album>> = futures::future::try_join_all(stream).await;
+    Ok(Json(albums?))
+}
+
+
+pub async fn get_albums(State(state): State<ApiContext>) -> Result<Json<Vec<Album>>> {
+    Ok(Json(db::get_albums(&state.db).await?))
+}
+
+pub async fn get_albums_for_genre(
+    State(state): State<ApiContext>,
+    Path(genre): Path<String>,
+) -> Result<Json<Vec<Album>>> {
+    Ok(Json(db::get_albums_for_genre(&state.db, genre).await?))
+}
+
+pub async fn get_albums_for_date(
+    State(state): State<ApiContext>,
+    Path(date): Path<String>,
+) -> Result<Json<Vec<Album>>> {
+    let format = format_description::parse("[year]-[month]-[day]")?;
+    let parsed = Date::parse(&date, &format)?;
+    Ok(Json(db::get_albums_for_date(&state.db, parsed).await?))
+}

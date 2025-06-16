@@ -14,3 +14,4 @@ serde = { version = "1.0.219", features = ["derive"] }
 time = { version = "0.3.41", features = [ "parsing", "formatting" ] }
 uuid = { version = "1.17.0", features = [ "serde", "v7" ] }
 futures = "0.3.31"
+thiserror = "2.0.12"

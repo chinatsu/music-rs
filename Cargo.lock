@@ -878,6 +878,7 @@ dependencies = [
  "futures",
  "serde",
  "sqlx",
+ "thiserror",
  "time",
  "tokio",
  "tower",
