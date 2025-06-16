@@ -36,19 +36,6 @@ impl IntoResponse for AppError {
     }
 }
 
-impl Into<sqlx::Error> for AppError {
-    fn into(self) -> sqlx::Error {
-        match self {
-            AppError::Anyhow(_) => todo!(),
-            AppError::Sqlx(error) => error,
-            AppError::InvalidFormatDescription(_) => todo!(),
-            AppError::Parse(_) => todo!(),
-            AppError::VarError(_) => todo!(),
-            AppError::IoError(_) => todo!(),
-        }
-    }
-}
-
 impl From<anyhow::Error> for AppError {
     fn from(err: anyhow::Error) -> Self {
         Self::Anyhow(err.into())

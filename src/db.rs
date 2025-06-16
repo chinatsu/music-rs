@@ -7,7 +7,7 @@ use crate::{
     types::{Album, Artist, Genre, InsertedAlbum, NewAlbum},
 };
 
-pub async fn make_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
+pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
     let inserted_album = add_album(&album, &db).await?;
     let genres = add_genres(&album.genres, &db).await?;
     let artists = add_artists(&album.artists, &db).await?;

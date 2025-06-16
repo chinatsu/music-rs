@@ -11,7 +11,7 @@ pub async fn add_albums(
     State(state): State<ApiContext>,
     Json(payload): Json<Vec<NewAlbum>>,
 ) -> Result<Json<Vec<Album>>> {
-    let stream = payload.iter().map(async |album| Ok(db::make_album(&state.db, album).await?));
+    let stream = payload.iter().map(async |album| Ok(db::register_album(&state.db, album).await?));
     let albums: Result<Vec<Album>> = futures::future::try_join_all(stream).await;
     Ok(Json(albums?))
 }
