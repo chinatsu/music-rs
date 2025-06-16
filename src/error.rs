@@ -30,7 +30,7 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Something went wrong: {}", self),
+            format!("Can't do what we wanted...: {self}"),
         )
             .into_response()
     }
@@ -38,36 +38,36 @@ impl IntoResponse for AppError {
 
 impl From<anyhow::Error> for AppError {
     fn from(err: anyhow::Error) -> Self {
-        Self::Anyhow(err.into())
+        Self::Anyhow(err)
     }
 }
 
 impl From<sqlx::Error> for AppError {
     fn from(err: sqlx::Error) -> Self {
-        Self::Sqlx(err.into())
+        Self::Sqlx(err)
     }
 }
 
 impl From<time::error::InvalidFormatDescription> for AppError {
     fn from(err: time::error::InvalidFormatDescription) -> Self {
-        Self::InvalidFormatDescription(err.into())
+        Self::InvalidFormatDescription(err)
     }
 }
 
 impl From<time::error::Parse> for AppError {
     fn from(err: time::error::Parse) -> Self {
-        Self::Parse(err.into())
+        Self::Parse(err)
     }
 }
 
 impl From<env::VarError> for AppError {
     fn from(err: env::VarError) -> Self {
-        Self::VarError(err.into())
+        Self::VarError(err)
     }
 }
 
 impl From<std::io::Error> for AppError {
     fn from(err: std::io::Error) -> Self {
-        Self::IoError(err.into())
+        Self::IoError(err)
     }
 }

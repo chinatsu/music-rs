@@ -8,11 +8,11 @@ use crate::{
 };
 
 pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
-    let inserted_album = add_album(&album, &db).await?;
-    let genres = add_genres(&album.genres, &db).await?;
-    let artists = add_artists(&album.artists, &db).await?;
+    let inserted_album = add_album(album, db).await?;
+    let genres = add_genres(&album.genres, db).await?;
+    let artists = add_artists(&album.artists, db).await?;
 
-    add_album_artists(&inserted_album, &artists, &db).await?;
+    add_album_artists(&inserted_album, &artists, db).await?;
     Ok(Album {
         id: inserted_album.id,
         title: inserted_album.title,
@@ -106,7 +106,7 @@ async fn get_genre(genre: String, db: &PgPool) -> Result<Genre> {
     let genre = query_as!(Genre, "SELECT * FROM genres WHERE name = $1", genre)
         .fetch_one(db)
         .await?;
-    return Ok(genre);
+    Ok(genre)
 }
 
 async fn get_artist(artist: String, db: &PgPool) -> Result<Artist> {
@@ -120,10 +120,10 @@ async fn get_artist(artist: String, db: &PgPool) -> Result<Artist> {
     let artist = query_as!(Artist, "SELECT * FROM artists WHERE name = $1", artist)
         .fetch_one(db)
         .await?;
-    return Ok(artist);
+    Ok(artist)
 }
 
-pub async fn add_album(album: &NewAlbum, db: &PgPool) -> Result<InsertedAlbum> {
+async fn add_album(album: &NewAlbum, db: &PgPool) -> Result<InsertedAlbum> {
     let _: std::result::Result<InsertedAlbum, sqlx::Error> = query_as!(
         InsertedAlbum,
         "INSERT INTO albums(title, date, url) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING id, title, date, url",
@@ -145,12 +145,12 @@ pub async fn add_album(album: &NewAlbum, db: &PgPool) -> Result<InsertedAlbum> {
     if let Some(album) = new_album {
         return Ok(album);
     }
-    return Err(AppError::Sqlx(sqlx::Error::ColumnNotFound(
+    Err(AppError::Sqlx(sqlx::Error::ColumnNotFound(
         "Couldn't find the row we just inserted".into(),
-    )));
+    )))
 }
 
-pub async fn add_album_artists(
+async fn add_album_artists(
     album: &InsertedAlbum,
     artists: &Vec<Artist>,
     db: &PgPool,
@@ -167,14 +167,14 @@ pub async fn add_album_artists(
     Ok(())
 }
 
-pub async fn add_genres(genres: &Vec<String>, db: &PgPool) -> Result<Vec<Genre>> {
+async fn add_genres(genres: &[String], db: &PgPool) -> Result<Vec<Genre>> {
     let stream = genres
         .iter()
         .map(async |g| get_genre(g.to_string(), db).await.unwrap());
     Ok(futures::future::join_all(stream).await)
 }
 
-pub async fn add_artists(artists: &Vec<String>, db: &PgPool) -> Result<Vec<Artist>> {
+async fn add_artists(artists: &[String], db: &PgPool) -> Result<Vec<Artist>> {
     let stream = artists
         .iter()
         .map(async |a| get_artist(a.to_string(), db).await.unwrap());
