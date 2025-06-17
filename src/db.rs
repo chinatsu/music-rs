@@ -178,7 +178,13 @@ async fn get_artist(artist: String, db: &PgPool) -> Result<Artist> {
 async fn add_album(album: &NewAlbum, db: &PgPool) -> Result<InsertedAlbum> {
     let _: std::result::Result<InsertedAlbum, sqlx::Error> = query_as!(
         InsertedAlbum,
-        "INSERT INTO albums(title, date, url) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING id, title, date, url",
+        "INSERT INTO albums(title, date, url)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (url) DO UPDATE
+        SET title = $1,
+            date = $2,
+            url = $3
+        RETURNING id, title, date, url",
         album.album,
         album.date,
         album.url
