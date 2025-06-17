@@ -9,7 +9,7 @@
 // @grant GM_xmlhttpRequest
 // ==/UserScript==
 
-var SERVER_URL = "http://localhost:5000"
+var SERVER_URL = "http://localhost:5000/update"
 
 
 function getArtistName(artist) {
