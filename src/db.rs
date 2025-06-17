@@ -209,7 +209,7 @@ async fn add_album_artists(
 ) -> Result<()> {
     for artist in artists {
         query!(
-            "INSERT INTO album_artists(album_id, artist_id) VALUES ($1, $2)",
+            "INSERT INTO album_artists(album_id, artist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
             album.id,
             artist.id
         )
@@ -222,7 +222,7 @@ async fn add_album_artists(
 async fn add_album_genres(album: &InsertedAlbum, genres: &Vec<Genre>, db: &PgPool) -> Result<()> {
     for genre in genres {
         query!(
-            "INSERT INTO album_genres(album_id, genre_id) VALUES ($1, $2)",
+            "INSERT INTO album_genres(album_id, genre_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
             album.id,
             genre.id
         )
