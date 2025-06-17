@@ -1,15 +1,16 @@
 use std::env;
 
 use axum::{
-    routing::{get, post}, Router
+    Router,
+    routing::{get, post},
 };
 use dotenv::dotenv;
 use sqlx::{PgPool, postgres::PgPoolOptions};
 
 mod db;
+mod error;
 mod routes;
 mod types;
-mod error;
 
 type Result<T> = std::result::Result<T, error::AppError>;
 

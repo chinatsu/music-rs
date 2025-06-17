@@ -2,8 +2,6 @@ use serde::{Deserialize, Serialize};
 use time::Date;
 use uuid::Uuid;
 
-
-
 #[derive(sqlx::Type, Serialize, Deserialize, Debug)]
 pub struct Album {
     pub id: Uuid,
@@ -48,8 +46,8 @@ pub struct Genre {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SimilarGenre {
     pub id: Uuid,
-    pub name: String,
-    pub similarity: Option<i64>
+    pub name: Option<String>,
+    pub count: Option<i64>,
 }
 
 mod my_date_format {

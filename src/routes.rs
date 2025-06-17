@@ -6,7 +6,8 @@ use time::{Date, format_description};
 use uuid::Uuid;
 
 use crate::{
-    db, types::{Album, Genre, NewAlbum, SimilarGenre}, ApiContext, Result
+    ApiContext, Result, db,
+    types::{Album, NewAlbum, SimilarGenre},
 };
 
 pub async fn add_albums(

@@ -1,7 +1,9 @@
 use std::{env, fmt::Display};
 
-use axum::{http::StatusCode, response::{IntoResponse, Response}};
-
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 
 #[derive(Debug)]
 pub enum AppError {
@@ -11,7 +13,7 @@ pub enum AppError {
     Parse(time::error::Parse),
     VarError(env::VarError),
     IoError(std::io::Error),
-    UuidError(uuid::Error)
+    UuidError(uuid::Error),
 }
 
 impl Display for AppError {
