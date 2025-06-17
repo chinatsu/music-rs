@@ -21,6 +21,15 @@ navigating to such a weekly chart, three buttons will appear. the `copy albums` 
 
 the server has a few endpoints, GETing `/` shows a whole list of all the albums that have been registered. GETing something like `/date/2025-01-01` only shows albums released that day, and `/genre/emoviolence` only shows albums with the defined genre in its list.
 
+## i just want to run it locally
+
+- ok, if you like docker you may `docker-compose up -d` to set the database up.
+- if you don't change the specifications, create an `.env` file with the contents `DATABASE_URL=postgres://music:hunter2@localhost:5432/music`
+- as described above, `sqlx database create` and `sqlx migrate run`
+- `cargo run`, with `--release` if you desire
+- the userscript should work without any changes
+- go get some data from rym :)
+
 ## i can't get it to work!
 
 tbh this is primarily for my own use, so if you can't figure it out make your own thing i guess
