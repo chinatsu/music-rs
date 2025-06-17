@@ -32,6 +32,7 @@ async fn main() -> Result<()> {
         .route("/update", post(routes::add_albums))
         .route("/date/{date}", get(routes::get_albums_for_date))
         .route("/genre/{genres}", get(routes::get_albums_for_genre))
+        .route("/artist/{artist_id}", get(routes::get_artist))
         .with_state(ApiContext { db });
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await?;

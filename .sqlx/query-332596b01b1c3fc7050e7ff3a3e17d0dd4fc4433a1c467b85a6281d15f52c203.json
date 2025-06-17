@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            al.id as \"id\",\n            al.title as \"title\",\n            al.date as \"date\",\n            al.url as \"url\",\n            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as \"artists?: Vec<Artist>\",\n            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as \"genres?: Vec<Genre>\"\n        FROM albums al\n        LEFT JOIN album_artists aa ON al.id = aa.album_id\n        LEFT JOIN artists ar ON aa.artist_id = ar.id\n        LEFT JOIN album_genres ag ON al.id = ag.album_id\n        LEFT JOIN genres g ON ag.genre_id = g.id\n        WHERE al.date = $1\n        GROUP BY al.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 3,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "artists?: Vec<Artist>",
+        "type_info": "RecordArray"
+      },
+      {
+        "ordinal": 5,
+        "name": "genres?: Vec<Genre>",
+        "type_info": "RecordArray"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "332596b01b1c3fc7050e7ff3a3e17d0dd4fc4433a1c467b85a6281d15f52c203"
+}

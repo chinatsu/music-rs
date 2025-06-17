@@ -1,5 +1,6 @@
 use sqlx::{PgPool, query, query_as};
 use time::Date;
+use uuid::Uuid;
 
 use crate::{
     Result,
@@ -70,6 +71,31 @@ pub async fn get_albums_for_genre(db: &PgPool, genre: String) -> Result<Vec<Albu
     )
     .fetch_all(db)
     .await?)
+}
+
+pub async fn get_albums_for_artist(db: &PgPool, artist_id: Uuid) -> Result<Vec<Album>> {
+    Ok(query_as!(
+        Album,
+        r#"
+        SELECT 
+            al.id as "id",
+            al.title as "title",
+            al.date as "date",
+            al.url as "url",
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>"
+        FROM albums al
+        LEFT JOIN album_artists aa ON al.id = aa.album_id
+        LEFT JOIN artists ar ON aa.artist_id = ar.id
+        LEFT JOIN album_genres ag ON al.id = ag.album_id
+        LEFT JOIN genres g ON ag.genre_id = g.id
+        WHERE $1 = ANY(SELECT ar.id FROM artists ar JOIN album_artists ala ON ala.artist_id = ar.id AND al.id = ala.album_id)
+        GROUP BY al.id
+        ORDER BY al.date desc"#,
+        artist_id
+    ).fetch_all(db)
+    .await?
+    )
 }
 
 pub async fn get_albums_for_date(db: &PgPool, date: Date) -> Result<Vec<Album>> {

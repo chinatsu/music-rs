@@ -10,7 +10,8 @@ pub enum AppError {
     InvalidFormatDescription(time::error::InvalidFormatDescription),
     Parse(time::error::Parse),
     VarError(env::VarError),
-    IoError(std::io::Error)
+    IoError(std::io::Error),
+    UuidError(uuid::Error)
 }
 
 impl Display for AppError {
@@ -22,6 +23,7 @@ impl Display for AppError {
             AppError::Parse(error) => error.fmt(f),
             AppError::VarError(error) => error.fmt(f),
             AppError::IoError(error) => error.fmt(f),
+            AppError::UuidError(error) => error.fmt(f),
         }
     }
 }
@@ -69,5 +71,11 @@ impl From<env::VarError> for AppError {
 impl From<std::io::Error> for AppError {
     fn from(err: std::io::Error) -> Self {
         Self::IoError(err)
+    }
+}
+
+impl From<uuid::Error> for AppError {
+    fn from(err: uuid::Error) -> Self {
+        Self::UuidError(err)
     }
 }
