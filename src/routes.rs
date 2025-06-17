@@ -6,8 +6,7 @@ use time::{Date, format_description};
 use uuid::Uuid;
 
 use crate::{
-    ApiContext, Result, db,
-    types::{Album, NewAlbum},
+    db, types::{Album, Genre, NewAlbum, SimilarGenre}, ApiContext, Result
 };
 
 pub async fn add_albums(
@@ -47,4 +46,11 @@ pub async fn get_albums_for_date(
     let format = format_description::parse("[year]-[month]-[day]")?;
     let parsed = Date::parse(&date, &format)?;
     Ok(Json(db::get_albums_for_date(&state.db, parsed).await?))
+}
+
+pub async fn get_similar_genres(
+    State(state): State<ApiContext>,
+    Path(genre): Path<String>,
+) -> Result<Json<Vec<SimilarGenre>>> {
+    Ok(Json(db::get_similar_genres(&state.db, genre).await?))
 }

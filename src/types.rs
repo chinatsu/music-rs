@@ -45,6 +45,13 @@ pub struct Genre {
     pub name: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SimilarGenre {
+    pub id: Uuid,
+    pub name: String,
+    pub similarity: Option<i64>
+}
+
 mod my_date_format {
     use anyhow::Result;
     use serde::{self, Deserialize, Deserializer, Serializer};

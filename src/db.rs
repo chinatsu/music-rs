@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::{
     Result,
     error::AppError,
-    types::{Album, Artist, Genre, InsertedAlbum, NewAlbum},
+    types::{Album, Artist, Genre, InsertedAlbum, NewAlbum, SimilarGenre},
 };
 
 pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
@@ -122,6 +122,28 @@ pub async fn get_albums_for_date(db: &PgPool, date: Date) -> Result<Vec<Album>> 
     .await?)
 }
 
+pub async fn get_similar_genres(db: &PgPool, genre_name: String) -> Result<Vec<SimilarGenre>> {
+    #[derive(sqlx::Type, Debug)]
+    struct UuidWrapper{
+        id: Uuid
+    }
+    let album_genres: Vec<UuidWrapper> = query_as!(
+        UuidWrapper,
+        r#"SELECT
+        ag.album_id as id
+        FROM album_genres ag
+        LEFT JOIN genres g ON g.id = ag.genre_id
+        WHERE $1 = g.name
+        "#,
+        genre_name
+    )
+    .fetch_all(db)
+    .await?;
+    let ag_uuids: Vec<Uuid> = album_genres.iter().map(|w| w.id).collect();
+    println!("{:?}", album_genres);
+    Ok(Vec::new())
+}
+
 async fn get_genre(genre: String, db: &PgPool) -> Result<Genre> {
     let _ = query_as!(
         Genre,
@@ -194,11 +216,7 @@ async fn add_album_artists(
     Ok(())
 }
 
-async fn add_album_genres(
-    album: &InsertedAlbum,
-    genres: &Vec<Genre>,
-    db: &PgPool,
-) -> Result<()> {
+async fn add_album_genres(album: &InsertedAlbum, genres: &Vec<Genre>, db: &PgPool) -> Result<()> {
     for genre in genres {
         query!(
             "INSERT INTO album_genres(album_id, genre_id) VALUES ($1, $2)",
