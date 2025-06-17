@@ -1,0 +1,16 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: "hunter2"
+      POSTGRES_USER: "music"
+      POSTGRES_DB: "music"
+
+volumes:
+  pgdata:
