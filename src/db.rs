@@ -187,9 +187,7 @@ async fn add_album(album: &NewAlbum, db: &PgPool) -> Result<InsertedAlbum> {
     .await;
     let new_album = query_as!(
         InsertedAlbum,
-        "SELECT * FROM albums WHERE title = $1 AND date = $2 AND url = $3",
-        album.album,
-        album.date,
+        "SELECT * FROM albums WHERE url = $1",
         album.url
     )
     .fetch_optional(db)
