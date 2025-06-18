@@ -123,20 +123,20 @@ pub async fn get_albums_for_date(db: &PgPool, date: Date) -> Result<Vec<Album>> 
 }
 
 pub async fn get_similar_genres(db: &PgPool, genre_name: String) -> Result<Vec<SimilarGenre>> {
+    let genre_id = Uuid::parse_str(&genre_name)?;
     let album_genres: Vec<SimilarGenre> = query_as!(
         SimilarGenre,
         r#"SELECT
-            ag.genre_id as id,
-            (SELECT name FROM genres where ag.genre_id = id) as name,
+            lag.genre_id as id,
+            g.name as name,
             COUNT(*) as count
         FROM album_genres ag
         LEFT JOIN album_genres lag ON lag.album_id = ag.album_id
         LEFT JOIN genres g ON g.id = lag.genre_id
-        WHERE $1 = g.name
-        GROUP BY ag.genre_id 
-        ORDER BY count desc;
-        "#,
-        genre_name
+        WHERE $1 = ag.genre_id
+        GROUP BY lag.genre_id, g.name
+        ORDER BY count desc"#,
+        genre_id
     )
     .fetch_all(db)
     .await?;
