@@ -128,7 +128,7 @@ pub async fn get_similar_genres(db: &PgPool, genre_name: String) -> Result<Vec<S
         r#"SELECT
             related_genre_details.id AS id,
             related_genre_details.name AS name,
-        COUNT(1) AS count
+            COUNT(1) AS count
         FROM genres AS g
         INNER JOIN album_genres AS related_albums
             ON g.id = related_albums.genre_id

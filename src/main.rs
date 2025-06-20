@@ -4,6 +4,7 @@ use axum::{
     Router,
     routing::{get, post},
 };
+use axum_response_cache::CacheLayer;
 use dotenv::dotenv;
 use sqlx::{PgPool, postgres::PgPoolOptions};
 
@@ -29,7 +30,7 @@ async fn main() -> Result<()> {
         .await?;
 
     let router = Router::new()
-        .route("/", get(routes::get_albums))
+        .route("/", get(routes::get_albums).layer(CacheLayer::with_lifespan(60)))
         .route("/update", post(routes::add_albums))
         .route("/date/{date}", get(routes::get_albums_for_date))
         .route("/genre/{genre}", get(routes::get_albums_for_genre))
