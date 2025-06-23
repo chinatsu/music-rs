@@ -11,6 +11,8 @@ pub struct Album {
     pub date: Date,
     pub genres: Option<Vec<Genre>>,
     pub url: String,
+    pub score: f32,
+    pub voters: i32
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NewAlbum {
@@ -20,6 +22,8 @@ pub struct NewAlbum {
     pub date: Date,
     pub genres: Vec<String>,
     pub url: String,
+    pub score: f32,
+    pub voters: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -29,6 +33,8 @@ pub struct InsertedAlbum {
     #[serde(with = "my_date_format")]
     pub date: Date,
     pub url: String,
+    pub score: f32,
+    pub voters: i32
 }
 
 #[derive(sqlx::Type, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Debug)]
