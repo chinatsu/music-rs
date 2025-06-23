@@ -47,7 +47,7 @@ pub async fn get_albums(db: &PgPool) -> Result<Vec<Album>> {
         LEFT JOIN genres g ON ag.genre_id = g.id
         WHERE al.voters != 0
         GROUP BY al.id
-        ORDER BY al.date desc"#
+        ORDER BY al.date desc, al.score desc"#
     )
     .fetch_all(db)
     .await?)
@@ -73,7 +73,7 @@ pub async fn get_albums_for_genre(db: &PgPool, genre: String) -> Result<Vec<Albu
         LEFT JOIN genres g ON ag.genre_id = g.id
         WHERE $1 = ANY(SELECT ge.name FROM genres ge JOIN album_genres alg ON alg.genre_id = ge.id AND al.id = alg.album_id) AND al.voters != 0
         GROUP BY al.id
-        ORDER BY al.date desc"#,
+        ORDER BY al.date desc, al.score desc"#,
         genre
     )
     .fetch_all(db)
@@ -100,7 +100,7 @@ pub async fn get_albums_for_artist(db: &PgPool, artist_id: Uuid) -> Result<Vec<A
         LEFT JOIN genres g ON ag.genre_id = g.id
         WHERE $1 = ANY(SELECT ar.id FROM artists ar JOIN album_artists ala ON ala.artist_id = ar.id AND al.id = ala.album_id) AND al.voters != 0
         GROUP BY al.id
-        ORDER BY al.date desc"#,
+        ORDER BY al.date desc, al.score desc"#,
         artist_id
     ).fetch_all(db)
     .await?
