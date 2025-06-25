@@ -12,7 +12,7 @@ pub struct Album {
     pub genres: Option<Vec<Genre>>,
     pub url: String,
     pub score: f32,
-    pub voters: i32
+    pub voters: i32,
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NewAlbum {
@@ -34,7 +34,7 @@ pub struct InsertedAlbum {
     pub date: Date,
     pub url: String,
     pub score: f32,
-    pub voters: i32
+    pub voters: i32,
 }
 
 #[derive(sqlx::Type, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Debug)]
@@ -54,6 +54,13 @@ pub struct SimilarGenre {
     pub id: Uuid,
     pub name: Option<String>,
     pub count: Option<i64>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GenreInfo {
+    pub genre: Genre,
+    pub similar_genres: Vec<SimilarGenre>,
+    pub albums: Vec<Album>,
 }
 
 mod my_date_format {

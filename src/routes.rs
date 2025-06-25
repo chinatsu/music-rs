@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::{
     ApiContext, Result, db,
-    types::{Album, NewAlbum, SimilarGenre},
+    types::{Album, GenreInfo, NewAlbum},
 };
 
 pub async fn add_albums(
@@ -33,13 +33,6 @@ pub async fn get_artist(
     Ok(Json(db::get_albums_for_artist(&state.db, id).await?))
 }
 
-pub async fn get_albums_for_genre(
-    State(state): State<ApiContext>,
-    Path(genre): Path<String>,
-) -> Result<Json<Vec<Album>>> {
-    Ok(Json(db::get_albums_for_genre(&state.db, genre).await?))
-}
-
 pub async fn get_albums_for_date(
     State(state): State<ApiContext>,
     Path(date): Path<String>,
@@ -49,9 +42,17 @@ pub async fn get_albums_for_date(
     Ok(Json(db::get_albums_for_date(&state.db, parsed).await?))
 }
 
-pub async fn get_similar_genres(
+pub async fn get_genre(
     State(state): State<ApiContext>,
     Path(genre): Path<String>,
-) -> Result<Json<Vec<SimilarGenre>>> {
-    Ok(Json(db::get_similar_genres(&state.db, genre).await?))
+) -> Result<Json<GenreInfo>> {
+    let genre_id = Uuid::parse_str(&genre)?;
+    let db_genre = db::get_genre(&state.db, genre_id).await?;
+    let db_similar_genres = db::get_similar_genres(&state.db, genre_id).await?;
+    let db_genre_albums = db::get_albums_for_genre(&state.db, genre_id).await?;
+    Ok(Json(GenreInfo {
+        genre: db_genre,
+        similar_genres: db_similar_genres,
+        albums: db_genre_albums,
+    }))
 }

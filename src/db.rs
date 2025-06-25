@@ -23,7 +23,7 @@ pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
         genres: Some(genres),
         url: inserted_album.url,
         score: inserted_album.score,
-        voters: inserted_album.voters
+        voters: inserted_album.voters,
     })
 }
 
@@ -53,7 +53,7 @@ pub async fn get_albums(db: &PgPool) -> Result<Vec<Album>> {
     .await?)
 }
 
-pub async fn get_albums_for_genre(db: &PgPool, genre: String) -> Result<Vec<Album>> {
+pub async fn get_albums_for_genre(db: &PgPool, genre_id: Uuid) -> Result<Vec<Album>> {
     Ok(query_as!(
         Album,
         r#"
@@ -71,10 +71,10 @@ pub async fn get_albums_for_genre(db: &PgPool, genre: String) -> Result<Vec<Albu
         LEFT JOIN artists ar ON aa.artist_id = ar.id
         LEFT JOIN album_genres ag ON al.id = ag.album_id
         LEFT JOIN genres g ON ag.genre_id = g.id
-        WHERE $1 = ANY(SELECT ge.name FROM genres ge JOIN album_genres alg ON alg.genre_id = ge.id AND al.id = alg.album_id) AND al.voters != 0
+        WHERE $1 = ANY(SELECT ge.id FROM genres ge JOIN album_genres alg ON alg.genre_id = ge.id AND al.id = alg.album_id) AND al.voters != 0
         GROUP BY al.id
         ORDER BY al.date desc, al.score desc"#,
-        genre
+        genre_id
     )
     .fetch_all(db)
     .await?)
@@ -134,32 +134,37 @@ pub async fn get_albums_for_date(db: &PgPool, date: Date) -> Result<Vec<Album>> 
     .await?)
 }
 
-pub async fn get_similar_genres(db: &PgPool, genre_name: String) -> Result<Vec<SimilarGenre>> {
+pub async fn get_similar_genres(db: &PgPool, genre_id: Uuid) -> Result<Vec<SimilarGenre>> {
     let album_genres: Vec<SimilarGenre> = query_as!(
         SimilarGenre,
         r#"SELECT
             related_genre_details.id AS id,
             related_genre_details.name AS name,
             COUNT(1) AS count
-        FROM genres AS g
-        INNER JOIN album_genres AS related_albums
-            ON g.id = related_albums.genre_id
+        FROM album_genres AS related_albums
         INNER JOIN album_genres AS related_genres
             ON related_albums.album_id = related_genres.album_id
         INNER JOIN genres AS related_genre_details
             ON related_genres.genre_id = related_genre_details.id
-        WHERE g.name LIKE $1
+        WHERE related_albums.genre_id = $1
         GROUP BY related_genre_details.id
         ORDER BY count DESC
         "#,
-        genre_name
+        genre_id
     )
     .fetch_all(db)
     .await?;
     Ok(album_genres)
 }
 
-async fn get_genre(genre: String, db: &PgPool) -> Result<Genre> {
+pub async fn get_genre(db: &PgPool, genre_id: Uuid) -> Result<Genre> {
+    let genre = query_as!(Genre, "SELECT * FROM genres WHERE id = $1", genre_id)
+        .fetch_one(db)
+        .await?;
+    Ok(genre)
+}
+
+async fn get_new_genre(genre: String, db: &PgPool) -> Result<Genre> {
     let _ = query_as!(
         Genre,
         "INSERT INTO genres(name) VALUES ($1) ON CONFLICT DO NOTHING RETURNING id, name",
@@ -255,7 +260,7 @@ async fn add_album_genres(album: &InsertedAlbum, genres: &Vec<Genre>, db: &PgPoo
 async fn add_genres(genres: &[String], db: &PgPool) -> Result<Vec<Genre>> {
     let stream = genres
         .iter()
-        .map(async |g| get_genre(g.to_string(), db).await.unwrap());
+        .map(async |g| get_new_genre(g.to_string(), db).await.unwrap());
     Ok(futures::future::join_all(stream).await)
 }
 
