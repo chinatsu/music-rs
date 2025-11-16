@@ -58,14 +58,14 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64) -> Result<Vec<Album>
         ORDER BY al.date desc, al.score desc
         LIMIT $1
         OFFSET $2"#,
-        limit as i64,
-        (page - 1) * limit as i64
+        limit,
+        (page - 1) * limit
     )
     .fetch_all(db)
     .await?)
 }
 
-pub async fn get_albums_for_genre(db: &PgPool, genre_id: Uuid) -> Result<Vec<Album>> {
+pub async fn get_albums_for_genre(db: &PgPool, genre_id: Uuid, page: i64, limit: i64) -> Result<Vec<Album>> {
     Ok(query_as!(
         Album,
         r#"
@@ -89,15 +89,19 @@ pub async fn get_albums_for_genre(db: &PgPool, genre_id: Uuid) -> Result<Vec<Alb
         LEFT JOIN moods m ON am.mood_id = m.id
         WHERE $1 = ANY(SELECT ge.id FROM genres ge JOIN album_genres alg ON alg.genre_id = ge.id AND al.id = alg.album_id) AND al.voters != 0
         GROUP BY al.id
-        ORDER BY al.date desc, al.score desc"#,
-        genre_id
+        ORDER BY al.date desc, al.score desc
+        LIMIT $2
+        OFFSET $3"#,
+        genre_id,
+        limit,
+        (page - 1) * limit
     )
     .fetch_all(db)
     .await?)
 }
 
 
-pub async fn get_albums_for_mood(db: &PgPool, mood_id: Uuid) -> Result<Vec<Album>> {
+pub async fn get_albums_for_mood(db: &PgPool, mood_id: Uuid, page: i64, limit: i64) -> Result<Vec<Album>> {
     Ok(query_as!(
         Album,
         r#"
@@ -121,14 +125,18 @@ pub async fn get_albums_for_mood(db: &PgPool, mood_id: Uuid) -> Result<Vec<Album
         LEFT JOIN moods m ON am.mood_id = m.id
         WHERE $1 = ANY(SELECT mo.id FROM moods mo JOIN album_moods alm ON alm.mood_id = mo.id AND al.id = alm.album_id) AND al.voters != 0
         GROUP BY al.id
-        ORDER BY al.date desc, al.score desc"#,
-        mood_id
+        ORDER BY al.date desc, al.score desc
+        LIMIT $2
+        OFFSET $3"#,
+        mood_id,
+        limit,
+        (page - 1) * limit
     )
     .fetch_all(db)
     .await?)
 }
 
-pub async fn get_albums_for_artist(db: &PgPool, artist_id: Uuid) -> Result<Vec<Album>> {
+pub async fn get_albums_for_artist(db: &PgPool, artist_id: Uuid, page: i64, limit: i64) -> Result<Vec<Album>> {
     Ok(query_as!(
         Album,
         r#"
@@ -152,14 +160,18 @@ pub async fn get_albums_for_artist(db: &PgPool, artist_id: Uuid) -> Result<Vec<A
         LEFT JOIN moods m ON am.mood_id = m.id
         WHERE $1 = ANY(SELECT ar.id FROM artists ar JOIN album_artists ala ON ala.artist_id = ar.id AND al.id = ala.album_id) AND al.voters != 0
         GROUP BY al.id
-        ORDER BY al.date desc, al.score desc"#,
-        artist_id
+        ORDER BY al.date desc, al.score desc
+        LIMIT $2
+        OFFSET $3"#,
+        artist_id,
+        limit,
+        (page - 1) * limit
     ).fetch_all(db)
     .await?
     )
 }
 
-pub async fn get_albums_for_date(db: &PgPool, date: Date) -> Result<Vec<Album>> {
+pub async fn get_albums_for_date(db: &PgPool, date: Date, page: i64, limit: i64) -> Result<Vec<Album>> {
     Ok(query_as!(
         Album,
         r#"
@@ -183,8 +195,12 @@ pub async fn get_albums_for_date(db: &PgPool, date: Date) -> Result<Vec<Album>> 
         LEFT JOIN moods m ON am.mood_id = m.id
         WHERE al.date = $1 AND al.voters != 0
         GROUP BY al.id
-        ORDER BY al.score desc"#,
-        date
+        ORDER BY al.score desc
+        LIMIT $2
+        OFFSET $3"#,
+        date,
+        limit,
+        (page - 1) * limit
     )
     .fetch_all(db)
     .await?)

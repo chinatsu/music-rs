@@ -34,44 +34,42 @@ pub async fn get_albums(
     State(state): State<ApiContext>,
     pagination: Query<Pagination>,
 ) -> Result<Json<Vec<Album>>> {
-    let limit = if pagination.limit == 0 {
-        100
-    } else {
-        pagination.limit
-    };
-    let page = if pagination.page == 0 {
-        1
-    } else {
-        pagination.page
-    };
+    let (page, limit) = get_pagination_params(pagination);
     Ok(Json(db::get_albums(&state.db, page, limit).await?))
 }
 
 pub async fn get_artist(
     State(state): State<ApiContext>,
     Path(artist_id): Path<String>,
+    pagination: Query<Pagination>,
 ) -> Result<Json<Vec<Album>>> {
     let id = Uuid::parse_str(&artist_id)?;
-    Ok(Json(db::get_albums_for_artist(&state.db, id).await?))
+    let (page, limit) = get_pagination_params(pagination);
+    Ok(Json(db::get_albums_for_artist(&state.db, id, page, limit).await?))
 }
 
 pub async fn get_albums_for_date(
     State(state): State<ApiContext>,
     Path(date): Path<String>,
+    pagination: Query<Pagination>,
 ) -> Result<Json<Vec<Album>>> {
     let format = format_description::parse("[year]-[month]-[day]")?;
     let parsed = Date::parse(&date, &format)?;
-    Ok(Json(db::get_albums_for_date(&state.db, parsed).await?))
+    let (page, limit) = get_pagination_params(pagination);
+    Ok(Json(db::get_albums_for_date(&state.db, parsed, page, limit).await?))
 }
 
 pub async fn get_genre(
     State(state): State<ApiContext>,
     Path(genre): Path<String>,
+    pagination: Query<Pagination>,
 ) -> Result<Json<GenreInfo>> {
     let genre_id = Uuid::parse_str(&genre)?;
+    let (page, limit) = get_pagination_params(pagination);
     let db_genre = db::get_genre(&state.db, genre_id).await?;
     let db_similar_genres = db::get_similar_genres(&state.db, genre_id).await?;
-    let db_genre_albums = db::get_albums_for_genre(&state.db, genre_id).await?;
+    let db_genre_albums = db::get_albums_for_genre(&state.db, genre_id, page, limit).await?;
+
     Ok(Json(GenreInfo {
         genre: db_genre,
         similar_genres: db_similar_genres,
@@ -82,14 +80,30 @@ pub async fn get_genre(
 pub async fn get_mood(
     State(state): State<ApiContext>,
     Path(mood): Path<String>,
+    pagination: Query<Pagination>,
 ) -> Result<Json<MoodInfo>> {
     let mood_id = Uuid::parse_str(&mood)?;
+    let (page, limit) = get_pagination_params(pagination);
     let db_mood = db::get_mood(&state.db, mood_id).await?;
     let db_similar_moods = db::get_similar_moods(&state.db, mood_id).await?;
-    let db_mood_albums = db::get_albums_for_mood(&state.db, mood_id).await?;
+    let db_mood_albums = db::get_albums_for_mood(&state.db, mood_id, page, limit).await?;
     Ok(Json(MoodInfo {
         mood: db_mood,
         similar_moods: db_similar_moods,
         albums: db_mood_albums,
     }))
+}
+
+fn get_pagination_params(pagination: Query<Pagination>) -> (i64, i64) {
+    let limit = if pagination.limit == 0 {
+        100
+    } else {
+        pagination.limit
+    };
+    let page = if pagination.page == 0 {
+        1
+    } else {
+        pagination.page
+    };
+    (page, limit)
 }
