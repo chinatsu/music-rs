@@ -12,6 +12,7 @@ pub struct Album {
     pub genres: Option<Vec<Genre>>,
     pub moods: Option<Vec<Mood>>,
     pub url: String,
+    pub rym_url: Option<String>,
     pub score: f32,
     pub voters: i32,
 }
@@ -24,6 +25,7 @@ pub struct NewAlbum {
     pub genres: Vec<String>,
     pub moods: Vec<String>,
     pub url: String,
+    pub rym_url: String,
     pub score: f32,
     pub voters: i32,
 }
@@ -35,6 +37,7 @@ pub struct InsertedAlbum {
     #[serde(with = "my_date_format")]
     pub date: Date,
     pub url: String,
+    pub rym_url: Option<String>,
     pub score: f32,
     pub voters: i32,
 }

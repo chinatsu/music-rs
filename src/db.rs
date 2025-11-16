@@ -25,6 +25,7 @@ pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
         genres: Some(genres),
         moods: Some(moods),
         url: inserted_album.url,
+        rym_url: inserted_album.rym_url,
         score: inserted_album.score,
         voters: inserted_album.voters,
     })
@@ -39,6 +40,7 @@ pub async fn get_albums(db: &PgPool) -> Result<Vec<Album>> {
             al.title as "title",
             al.date as "date",
             al.url as "url",
+            al.rym_url as "rym_url",
             al.score as "score",
             al.voters as "voters",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
@@ -68,6 +70,7 @@ pub async fn get_albums_for_genre(db: &PgPool, genre_id: Uuid) -> Result<Vec<Alb
             al.title as "title",
             al.date as "date",
             al.url as "url",
+            al.rym_url as "rym_url",
             al.score as "score",
             al.voters as "voters",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
@@ -99,6 +102,7 @@ pub async fn get_albums_for_mood(db: &PgPool, mood_id: Uuid) -> Result<Vec<Album
             al.title as "title",
             al.date as "date",
             al.url as "url",
+            al.rym_url as "rym_url",
             al.score as "score",
             al.voters as "voters",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
@@ -129,6 +133,7 @@ pub async fn get_albums_for_artist(db: &PgPool, artist_id: Uuid) -> Result<Vec<A
             al.title as "title",
             al.date as "date",
             al.url as "url",
+            al.rym_url as "rym_url",
             al.score as "score",
             al.voters as "voters",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
@@ -159,6 +164,7 @@ pub async fn get_albums_for_date(db: &PgPool, date: Date) -> Result<Vec<Album>> 
             al.title as "title",
             al.date as "date",
             al.url as "url",
+            al.rym_url as "rym_url",
             al.score as "score",
             al.voters as "voters",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
@@ -285,18 +291,20 @@ async fn get_artist(artist: String, db: &PgPool) -> Result<Artist> {
 async fn add_album(album: &NewAlbum, db: &PgPool) -> Result<InsertedAlbum> {
     let _: std::result::Result<InsertedAlbum, sqlx::Error> = query_as!(
         InsertedAlbum,
-        "INSERT INTO albums(title, date, url, score, voters)
-        VALUES ($1, $2, $3, $4, $5)
+        "INSERT INTO albums(title, date, url, rym_url, score, voters)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (url) DO UPDATE
         SET title = $1,
             date = $2,
             url = $3,
-            score = $4,
-            voters = $5
-        RETURNING id, title, date, url, score, voters",
+            rym_url = $4,
+            score = $5,
+            voters = $6
+        RETURNING id, title, date, url, rym_url, score, voters",
         album.album,
         album.date,
         album.url,
+        album.rym_url,
         album.score,
         album.voters
     )
