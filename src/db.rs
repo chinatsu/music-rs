@@ -31,7 +31,7 @@ pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
     })
 }
 
-pub async fn get_albums(db: &PgPool) -> Result<Vec<Album>> {
+pub async fn get_albums(db: &PgPool, page: i64, limit: i64) -> Result<Vec<Album>> {
     Ok(query_as!(
         Album,
         r#"
@@ -55,7 +55,11 @@ pub async fn get_albums(db: &PgPool) -> Result<Vec<Album>> {
         LEFT JOIN moods m ON am.mood_id = m.id
         WHERE al.voters != 0
         GROUP BY al.id
-        ORDER BY al.date desc, al.score desc"#
+        ORDER BY al.date desc, al.score desc
+        LIMIT $1
+        OFFSET $2"#,
+        limit as i64,
+        (page - 1) * limit as i64
     )
     .fetch_all(db)
     .await?)

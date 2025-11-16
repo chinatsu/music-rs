@@ -1,7 +1,8 @@
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::{Path, Query, State},
 };
+use serde::Deserialize;
 use time::{Date, format_description};
 use uuid::Uuid;
 
@@ -9,6 +10,14 @@ use crate::{
     ApiContext, Result, db,
     types::{Album, GenreInfo, MoodInfo, NewAlbum},
 };
+
+#[derive(Deserialize)]
+pub struct Pagination {
+    #[serde(default)]
+    page: i64,
+    #[serde(default)]
+    limit: i64,
+}
 
 pub async fn add_albums(
     State(state): State<ApiContext>,
@@ -21,8 +30,21 @@ pub async fn add_albums(
     Ok(Json(albums?))
 }
 
-pub async fn get_albums(State(state): State<ApiContext>) -> Result<Json<Vec<Album>>> {
-    Ok(Json(db::get_albums(&state.db).await?))
+pub async fn get_albums(
+    State(state): State<ApiContext>,
+    pagination: Query<Pagination>,
+) -> Result<Json<Vec<Album>>> {
+    let limit = if pagination.limit == 0 {
+        100
+    } else {
+        pagination.limit
+    };
+    let page = if pagination.page == 0 {
+        1
+    } else {
+        pagination.page
+    };
+    Ok(Json(db::get_albums(&state.db, page, limit).await?))
 }
 
 pub async fn get_artist(
