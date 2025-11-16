@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::{
     ApiContext, Result, db,
-    types::{Album, GenreInfo, NewAlbum},
+    types::{Album, GenreInfo, MoodInfo, NewAlbum},
 };
 
 pub async fn add_albums(
@@ -54,5 +54,20 @@ pub async fn get_genre(
         genre: db_genre,
         similar_genres: db_similar_genres,
         albums: db_genre_albums,
+    }))
+}
+
+pub async fn get_mood(
+    State(state): State<ApiContext>,
+    Path(mood): Path<String>,
+) -> Result<Json<MoodInfo>> {
+    let mood_id = Uuid::parse_str(&mood)?;
+    let db_mood = db::get_mood(&state.db, mood_id).await?;
+    let db_similar_moods = db::get_similar_moods(&state.db, mood_id).await?;
+    let db_mood_albums = db::get_albums_for_mood(&state.db, mood_id).await?;
+    Ok(Json(MoodInfo {
+        mood: db_mood,
+        similar_moods: db_similar_moods,
+        albums: db_mood_albums,
     }))
 }

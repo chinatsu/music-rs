@@ -10,6 +10,7 @@ pub struct Album {
     #[serde(with = "my_date_format")]
     pub date: Date,
     pub genres: Option<Vec<Genre>>,
+    pub moods: Option<Vec<Mood>>,
     pub url: String,
     pub score: f32,
     pub voters: i32,
@@ -21,6 +22,7 @@ pub struct NewAlbum {
     #[serde(with = "my_date_format")]
     pub date: Date,
     pub genres: Vec<String>,
+    pub moods: Vec<String>,
     pub url: String,
     pub score: f32,
     pub voters: i32,
@@ -49,8 +51,22 @@ pub struct Genre {
     pub name: String,
 }
 
+#[derive(sqlx::Type, Serialize, Deserialize, Debug)]
+pub struct Mood {
+    pub id: Uuid,
+    pub name: String,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SimilarGenre {
+    pub id: Uuid,
+    pub name: Option<String>,
+    pub count: Option<i64>,
+}
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SimilarMood {
     pub id: Uuid,
     pub name: Option<String>,
     pub count: Option<i64>,
@@ -60,6 +76,13 @@ pub struct SimilarGenre {
 pub struct GenreInfo {
     pub genre: Genre,
     pub similar_genres: Vec<SimilarGenre>,
+    pub albums: Vec<Album>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MoodInfo {
+    pub mood: Mood,
+    pub similar_moods: Vec<SimilarMood>,
     pub albums: Vec<Album>,
 }
 

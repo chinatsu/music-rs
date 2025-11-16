@@ -37,6 +37,7 @@ async fn main() -> Result<()> {
         .route("/update", post(routes::add_albums))
         .route("/date/{date}", get(routes::get_albums_for_date))
         .route("/genre/{genre}", get(routes::get_genre))
+        .route("/mood/{mood}", get(routes::get_mood))
         .route("/artist/{artist_id}", get(routes::get_artist))
         .with_state(ApiContext { db });
 
