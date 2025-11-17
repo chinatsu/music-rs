@@ -96,7 +96,7 @@ pub async fn get_mood(
 
 fn get_pagination_params(pagination: Query<Pagination>) -> (i64, i64) {
     let limit = if pagination.limit == 0 {
-        100
+        25
     } else {
         pagination.limit
     };
