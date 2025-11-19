@@ -16,3 +16,4 @@ uuid = { version = "1.17.0", features = [ "serde", "v7" ] }
 futures = "0.3.31"
 thiserror = "2.0.12"
 axum-response-cache = "0.4.0"
+slab = "0.4.11"
