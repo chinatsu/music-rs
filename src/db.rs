@@ -443,11 +443,13 @@ async fn add_artists(artists: &[String], db: &PgPool) -> Result<Vec<Artist>> {
 }
 
 async fn add_tracks(album_id: Uuid, tracks: &[Track], db: &PgPool) -> Result<Vec<Track>> {
+    query!("DELETE FROM tracks WHERE album_id = $1", album_id)
+        .execute(db)
+        .await?;
     for track in tracks {
         query!(
             "INSERT INTO tracks(album_id, track_number, title) 
-            VALUES ($1, $2, $3) 
-            ON CONFLICT(album_id, track_number) DO UPDATE SET title = $3",
+            VALUES ($1, $2, $3)",
             album_id,
             track.track_number,
             track.title
