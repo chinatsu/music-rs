@@ -5,7 +5,9 @@ use uuid::Uuid;
 use crate::{
     Result,
     error::AppError,
-    types::{Album, Artist, Genre, InsertedAlbum, Mood, NewAlbum, SimilarGenre, SimilarMood},
+    types::{
+        Album, Artist, Genre, InsertedAlbum, Mood, NewAlbum, SimilarGenre, SimilarMood, Track,
+    },
 };
 
 pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
@@ -13,6 +15,7 @@ pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
     let genres = add_genres(&album.genres, db).await?;
     let artists = add_artists(&album.artists, db).await?;
     let moods = add_moods(&album.moods, db).await?;
+    let tracks = add_tracks(inserted_album.id, &album.tracks, db).await?;
 
     add_album_artists(&inserted_album, &artists, db).await?;
     add_album_genres(&inserted_album, &genres, db).await?;
@@ -24,6 +27,7 @@ pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
         date: inserted_album.date,
         genres: Some(genres),
         moods: Some(moods),
+        tracks: Some(tracks),
         url: inserted_album.url,
         rym_url: inserted_album.rym_url,
         score: inserted_album.score,
@@ -45,7 +49,8 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64) -> Result<Vec<Album>
             al.voters as "voters",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
-            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>"
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.track_number, t.title)) filter (where t.id is not null), '{NULL}'), '{}') as "tracks?: Vec<Track>"
         FROM albums al
         LEFT JOIN album_artists aa ON al.id = aa.album_id
         LEFT JOIN artists ar ON aa.artist_id = ar.id
@@ -53,6 +58,7 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64) -> Result<Vec<Album>
         LEFT JOIN genres g ON ag.genre_id = g.id
         LEFT JOIN album_moods am ON al.id = am.album_id
         LEFT JOIN moods m ON am.mood_id = m.id
+        LEFT JOIN tracks t ON al.id = t.album_id
         WHERE al.voters != 0
         GROUP BY al.id
         ORDER BY al.date desc, al.score desc
@@ -65,7 +71,12 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64) -> Result<Vec<Album>
     .await?)
 }
 
-pub async fn get_albums_for_genre(db: &PgPool, genre_id: Uuid, page: i64, limit: i64) -> Result<Vec<Album>> {
+pub async fn get_albums_for_genre(
+    db: &PgPool,
+    genre_id: Uuid,
+    page: i64,
+    limit: i64,
+) -> Result<Vec<Album>> {
     Ok(query_as!(
         Album,
         r#"
@@ -79,7 +90,8 @@ pub async fn get_albums_for_genre(db: &PgPool, genre_id: Uuid, page: i64, limit:
             al.voters as "voters",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
-            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>"
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.track_number, t.title)) filter (where t.id is not null), '{NULL}'), '{}') as "tracks?: Vec<Track>"
         FROM albums al
         LEFT JOIN album_artists aa ON al.id = aa.album_id
         LEFT JOIN artists ar ON aa.artist_id = ar.id
@@ -87,6 +99,7 @@ pub async fn get_albums_for_genre(db: &PgPool, genre_id: Uuid, page: i64, limit:
         LEFT JOIN genres g ON ag.genre_id = g.id
         LEFT JOIN album_moods am ON al.id = am.album_id
         LEFT JOIN moods m ON am.mood_id = m.id
+        LEFT JOIN tracks t ON al.id = t.album_id
         WHERE $1 = ANY(SELECT ge.id FROM genres ge JOIN album_genres alg ON alg.genre_id = ge.id AND al.id = alg.album_id) AND al.voters != 0
         GROUP BY al.id
         ORDER BY al.date desc, al.score desc
@@ -100,8 +113,12 @@ pub async fn get_albums_for_genre(db: &PgPool, genre_id: Uuid, page: i64, limit:
     .await?)
 }
 
-
-pub async fn get_albums_for_mood(db: &PgPool, mood_id: Uuid, page: i64, limit: i64) -> Result<Vec<Album>> {
+pub async fn get_albums_for_mood(
+    db: &PgPool,
+    mood_id: Uuid,
+    page: i64,
+    limit: i64,
+) -> Result<Vec<Album>> {
     Ok(query_as!(
         Album,
         r#"
@@ -115,7 +132,8 @@ pub async fn get_albums_for_mood(db: &PgPool, mood_id: Uuid, page: i64, limit: i
             al.voters as "voters",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
-            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>"
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.track_number, t.title)) filter (where t.id is not null), '{NULL}'), '{}') as "tracks?: Vec<Track>"
         FROM albums al
         LEFT JOIN album_artists aa ON al.id = aa.album_id
         LEFT JOIN artists ar ON aa.artist_id = ar.id
@@ -123,6 +141,7 @@ pub async fn get_albums_for_mood(db: &PgPool, mood_id: Uuid, page: i64, limit: i
         LEFT JOIN genres g ON ag.genre_id = g.id
         LEFT JOIN album_moods am ON al.id = am.album_id
         LEFT JOIN moods m ON am.mood_id = m.id
+        LEFT JOIN tracks t ON al.id = t.album_id
         WHERE $1 = ANY(SELECT mo.id FROM moods mo JOIN album_moods alm ON alm.mood_id = mo.id AND al.id = alm.album_id) AND al.voters != 0
         GROUP BY al.id
         ORDER BY al.date desc, al.score desc
@@ -136,7 +155,12 @@ pub async fn get_albums_for_mood(db: &PgPool, mood_id: Uuid, page: i64, limit: i
     .await?)
 }
 
-pub async fn get_albums_for_artist(db: &PgPool, artist_id: Uuid, page: i64, limit: i64) -> Result<Vec<Album>> {
+pub async fn get_albums_for_artist(
+    db: &PgPool,
+    artist_id: Uuid,
+    page: i64,
+    limit: i64,
+) -> Result<Vec<Album>> {
     Ok(query_as!(
         Album,
         r#"
@@ -150,7 +174,8 @@ pub async fn get_albums_for_artist(db: &PgPool, artist_id: Uuid, page: i64, limi
             al.voters as "voters",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
-            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>"
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.track_number, t.title)) filter (where t.id is not null), '{NULL}'), '{}') as "tracks?: Vec<Track>"
         FROM albums al
         LEFT JOIN album_artists aa ON al.id = aa.album_id
         LEFT JOIN artists ar ON aa.artist_id = ar.id
@@ -158,6 +183,7 @@ pub async fn get_albums_for_artist(db: &PgPool, artist_id: Uuid, page: i64, limi
         LEFT JOIN genres g ON ag.genre_id = g.id
         LEFT JOIN album_moods am ON al.id = am.album_id
         LEFT JOIN moods m ON am.mood_id = m.id
+        LEFT JOIN tracks t ON al.id = t.album_id
         WHERE $1 = ANY(SELECT ar.id FROM artists ar JOIN album_artists ala ON ala.artist_id = ar.id AND al.id = ala.album_id) AND al.voters != 0
         GROUP BY al.id
         ORDER BY al.date desc, al.score desc
@@ -171,7 +197,12 @@ pub async fn get_albums_for_artist(db: &PgPool, artist_id: Uuid, page: i64, limi
     )
 }
 
-pub async fn get_albums_for_date(db: &PgPool, date: Date, page: i64, limit: i64) -> Result<Vec<Album>> {
+pub async fn get_albums_for_date(
+    db: &PgPool,
+    date: Date,
+    page: i64,
+    limit: i64,
+) -> Result<Vec<Album>> {
     Ok(query_as!(
         Album,
         r#"
@@ -185,7 +216,8 @@ pub async fn get_albums_for_date(db: &PgPool, date: Date, page: i64, limit: i64)
             al.voters as "voters",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
-            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>"
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.track_number, t.title)) filter (where t.id is not null), '{NULL}'), '{}') as "tracks?: Vec<Track>"
         FROM albums al
         LEFT JOIN album_artists aa ON al.id = aa.album_id
         LEFT JOIN artists ar ON aa.artist_id = ar.id
@@ -193,6 +225,7 @@ pub async fn get_albums_for_date(db: &PgPool, date: Date, page: i64, limit: i64)
         LEFT JOIN genres g ON ag.genre_id = g.id
         LEFT JOIN album_moods am ON al.id = am.album_id
         LEFT JOIN moods m ON am.mood_id = m.id
+        LEFT JOIN tracks t ON al.id = t.album_id
         WHERE al.date = $1 AND al.voters != 0
         GROUP BY al.id
         ORDER BY al.score desc
@@ -407,4 +440,20 @@ async fn add_artists(artists: &[String], db: &PgPool) -> Result<Vec<Artist>> {
         .iter()
         .map(async |a| get_artist(a.to_string(), db).await.unwrap());
     Ok(futures::future::join_all(stream).await)
+}
+
+async fn add_tracks(album_id: Uuid, tracks: &[Track], db: &PgPool) -> Result<Vec<Track>> {
+    for track in tracks {
+        query!(
+            "INSERT INTO tracks(album_id, track_number, title) 
+            VALUES ($1, $2, $3) 
+            ON CONFLICT(album_id, track_number) DO UPDATE SET title = $3",
+            album_id,
+            track.track_number,
+            track.title
+        )
+        .execute(db)
+        .await?;
+    }
+    Ok(tracks.to_vec())
 }

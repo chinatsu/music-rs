@@ -11,6 +11,7 @@ pub struct Album {
     pub date: Date,
     pub genres: Option<Vec<Genre>>,
     pub moods: Option<Vec<Mood>>,
+    pub tracks: Option<Vec<Track>>,
     pub url: String,
     pub rym_url: Option<String>,
     pub score: f32,
@@ -24,6 +25,7 @@ pub struct NewAlbum {
     pub date: Date,
     pub genres: Vec<String>,
     pub moods: Vec<String>,
+    pub tracks: Vec<Track>,
     pub url: String,
     pub rym_url: String,
     pub score: f32,
@@ -46,6 +48,12 @@ pub struct InsertedAlbum {
 pub struct Artist {
     pub id: Uuid,
     pub name: String,
+}
+
+#[derive(sqlx::Type, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Debug)]
+pub struct Track {
+    pub track_number: i32,
+    pub title: String,
 }
 
 #[derive(sqlx::Type, Serialize, Deserialize, Debug)]
