@@ -32,7 +32,7 @@ async fn main() -> Result<()> {
     let router = Router::new()
         .route(
             "/",
-            get(routes::get_albums).layer(CacheLayer::with_lifespan(Duration::from_secs(60))),
+            get(routes::get_albums).layer(CacheLayer::with_lifespan(Duration::from_secs(1))),
         )
         .route("/update", post(routes::add_albums))
         .route("/date/{date}", get(routes::get_albums_for_date))
