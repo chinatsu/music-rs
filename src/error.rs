@@ -9,8 +9,7 @@ use axum::{
 pub enum AppError {
     Anyhow(anyhow::Error),
     Sqlx(sqlx::Error),
-    InvalidFormatDescription(time::error::InvalidFormatDescription),
-    Parse(time::error::Parse),
+    Parse(chrono::ParseError),
     VarError(env::VarError),
     IoError(std::io::Error),
     UuidError(uuid::Error),
@@ -21,7 +20,6 @@ impl Display for AppError {
         match self {
             AppError::Anyhow(error) => error.fmt(f),
             AppError::Sqlx(error) => error.fmt(f),
-            AppError::InvalidFormatDescription(error) => error.fmt(f),
             AppError::Parse(error) => error.fmt(f),
             AppError::VarError(error) => error.fmt(f),
             AppError::IoError(error) => error.fmt(f),
@@ -52,14 +50,9 @@ impl From<sqlx::Error> for AppError {
     }
 }
 
-impl From<time::error::InvalidFormatDescription> for AppError {
-    fn from(err: time::error::InvalidFormatDescription) -> Self {
-        Self::InvalidFormatDescription(err)
-    }
-}
 
-impl From<time::error::Parse> for AppError {
-    fn from(err: time::error::Parse) -> Self {
+impl From<chrono::ParseError> for AppError {
+    fn from(err: chrono::ParseError) -> Self {
         Self::Parse(err)
     }
 }

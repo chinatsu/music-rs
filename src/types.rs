@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use time::Date;
+use sqlx::types::chrono::NaiveDate;
 use uuid::Uuid;
 
 #[derive(sqlx::Type, Serialize, Deserialize, Debug)]
@@ -8,7 +8,7 @@ pub struct Album {
     pub title: String,
     pub artists: Option<Vec<Artist>>,
     #[serde(with = "my_date_format")]
-    pub date: Date,
+    pub date: NaiveDate,
     pub genres: Option<Vec<Genre>>,
     pub moods: Option<Vec<Mood>>,
     pub tracks: Option<Vec<Track>>,
@@ -16,13 +16,15 @@ pub struct Album {
     pub rym_url: Option<String>,
     pub score: f32,
     pub voters: i32,
+    #[serde(with = "my_date_format")]
+    pub modified_date: NaiveDate,
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NewAlbum {
     pub album: String,
     pub artists: Vec<String>,
     #[serde(with = "my_date_format")]
-    pub date: Date,
+    pub date: NaiveDate,
     pub genres: Vec<String>,
     pub moods: Vec<String>,
     pub tracks: Vec<Track>,
@@ -37,11 +39,13 @@ pub struct InsertedAlbum {
     pub id: Uuid,
     pub title: String,
     #[serde(with = "my_date_format")]
-    pub date: Date,
+    pub date: NaiveDate,
     pub url: String,
     pub rym_url: Option<String>,
     pub score: f32,
     pub voters: i32,
+    #[serde(with = "my_date_format")]
+    pub modified_date: NaiveDate,
 }
 
 #[derive(sqlx::Type, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Debug)]
@@ -100,25 +104,22 @@ pub struct MoodInfo {
 mod my_date_format {
     use anyhow::Result;
     use serde::{self, Deserialize, Deserializer, Serializer};
-    use sqlx::types::time::Date;
-    use time::format_description;
+    use sqlx::types::chrono::NaiveDate;
 
-    pub fn serialize<S>(date: &Date, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(date: &NaiveDate, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let format = format_description::parse("[year]-[month]-[day]").unwrap();
-        let s = date.format(&format).unwrap();
+        let s = format!("{}", date.format("%Y-%m-%d"));
         serializer.serialize_str(&s)
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<NaiveDate, D::Error>
     where
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        let format = format_description::parse("[year]-[month]-[day]").unwrap();
-        let date = Date::parse(&s, &format).map_err(serde::de::Error::custom)?;
+        let date = NaiveDate::parse_from_str(&s, "%Y-%m-%d").map_err(serde::de::Error::custom)?;
         Ok(date)
     }
 }

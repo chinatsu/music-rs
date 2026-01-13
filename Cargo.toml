@@ -6,14 +6,14 @@ edition = "2024"
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 axum = "0.8.4"
-sqlx = { version = "0.8", features = [ "runtime-tokio", "postgres", "derive", "time", "uuid" ] }
+sqlx = { version = "0.8", features = [ "runtime-tokio", "postgres", "derive", "uuid", "chrono" ] }
 tower = "0.5.2"
 anyhow = "1.0.98"
 dotenv = "0.15.0"
 serde = { version = "1.0.219", features = ["derive"] }
-time = { version = "0.3.41", features = [ "parsing", "formatting" ] }
 uuid = { version = "1.17.0", features = [ "serde", "v7" ] }
 futures = "0.3.31"
 thiserror = "2.0.12"
 axum-response-cache = "0.4.0"
 slab = "0.4.11"
+chrono = "0.4.42"

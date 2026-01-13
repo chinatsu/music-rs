@@ -2,8 +2,8 @@ use axum::{
     Json,
     extract::{Path, Query, State},
 };
+use chrono::NaiveDate;
 use serde::Deserialize;
-use time::{Date, format_description};
 use uuid::Uuid;
 
 use crate::{
@@ -53,8 +53,7 @@ pub async fn get_albums_for_date(
     Path(date): Path<String>,
     pagination: Query<Pagination>,
 ) -> Result<Json<Vec<Album>>> {
-    let format = format_description::parse("[year]-[month]-[day]")?;
-    let parsed = Date::parse(&date, &format)?;
+    let parsed = NaiveDate::parse_from_str(&date, "%Y-%m-%d")?;
     let (page, limit) = get_pagination_params(pagination);
     Ok(Json(db::get_albums_for_date(&state.db, parsed, page, limit).await?))
 }

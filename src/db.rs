@@ -1,5 +1,5 @@
-use sqlx::{PgPool, query, query_as};
-use time::Date;
+use chrono::NaiveDate;
+use sqlx::{PgPool, query, query_as, types::chrono::Utc};
 use uuid::Uuid;
 
 use crate::{
@@ -32,6 +32,7 @@ pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
         rym_url: inserted_album.rym_url,
         score: inserted_album.score,
         voters: inserted_album.voters,
+        modified_date: Utc::now().date_naive(),
     })
 }
 
@@ -47,6 +48,7 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64) -> Result<Vec<Album>
             al.rym_url as "rym_url",
             al.score as "score",
             al.voters as "voters",
+            al.modified_date as "modified_date",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
@@ -88,6 +90,7 @@ pub async fn get_albums_for_genre(
             al.rym_url as "rym_url",
             al.score as "score",
             al.voters as "voters",
+            al.modified_date as "modified_date",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
@@ -130,6 +133,7 @@ pub async fn get_albums_for_mood(
             al.rym_url as "rym_url",
             al.score as "score",
             al.voters as "voters",
+            al.modified_date as "modified_date",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
@@ -172,6 +176,7 @@ pub async fn get_albums_for_artist(
             al.rym_url as "rym_url",
             al.score as "score",
             al.voters as "voters",
+            al.modified_date as "modified_date",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
@@ -199,7 +204,7 @@ pub async fn get_albums_for_artist(
 
 pub async fn get_albums_for_date(
     db: &PgPool,
-    date: Date,
+    date: NaiveDate,
     page: i64,
     limit: i64,
 ) -> Result<Vec<Album>> {
@@ -214,6 +219,7 @@ pub async fn get_albums_for_date(
             al.rym_url as "rym_url",
             al.score as "score",
             al.voters as "voters",
+            al.modified_date as "modified_date",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
@@ -352,8 +358,9 @@ async fn add_album(album: &NewAlbum, db: &PgPool) -> Result<InsertedAlbum> {
             url = $3,
             rym_url = $4,
             score = $5,
-            voters = $6
-        RETURNING id, title, date, url, rym_url, score, voters",
+            voters = $6,
+            modified_date = DEFAULT
+        RETURNING id, title, date, url, rym_url, score, voters, modified_date",
         album.album,
         album.date,
         album.url,
