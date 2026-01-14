@@ -102,6 +102,13 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64, filters: &crate::rou
 
     let query = builder.build();
     Ok(query.fetch_all(db).await?.into_iter().map(|row| {
+        use sqlx::types::JsonValue;
+        
+        let artists_json: JsonValue = row.get("artists");
+        let genres_json: JsonValue = row.get("genres");
+        let moods_json: JsonValue = row.get("moods");
+        let tracks_json: JsonValue = row.get("tracks");
+        
         Album {
             id: row.get("id"),
             title: row.get("title"),
@@ -111,10 +118,10 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64, filters: &crate::rou
             score: row.get("score"),
             voters: row.get("voters"),
             modified_date: row.get("modified_date"),
-            artists: row.get("artists"),
-            genres: row.get("genres"),
-            moods: row.get("moods"),
-            tracks: row.get("tracks"),
+            artists: serde_json::from_value(artists_json).ok(),
+            genres: serde_json::from_value(genres_json).ok(),
+            moods: serde_json::from_value(moods_json).ok(),
+            tracks: serde_json::from_value(tracks_json).ok(),
         }
     }).collect())
 }

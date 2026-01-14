@@ -17,3 +17,4 @@ thiserror = "2.0.12"
 axum-response-cache = "0.4.0"
 slab = "0.4.11"
 chrono = { version = "0.4.42", features = ["serde"] }
+serde_json = "1.0.149"
