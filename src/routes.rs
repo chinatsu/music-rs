@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     ApiContext, Result, db,
-    types::{Album, GenreInfo, MoodInfo, NewAlbum},
+    types::{Album, NewAlbum},
 };
 
 #[derive(Deserialize, Clone)]
@@ -52,51 +52,6 @@ pub async fn get_artist(
     let id = Uuid::parse_str(&artist_id)?;
     let (page, limit) = get_pagination_params(album_filter);
     Ok(Json(db::get_albums_for_artist(&state.db, id, page, limit).await?))
-}
-
-pub async fn get_albums_for_date(
-    State(state): State<ApiContext>,
-    Path(date): Path<String>,
-    album_filter: Query<AlbumFilter>,
-) -> Result<Json<Vec<Album>>> {
-    let parsed = NaiveDate::parse_from_str(&date, "%Y-%m-%d")?;
-    let (page, limit) = get_pagination_params(album_filter);
-    Ok(Json(db::get_albums_for_date(&state.db, parsed, page, limit).await?))
-}
-
-pub async fn get_genre(
-    State(state): State<ApiContext>,
-    Path(genre): Path<String>,
-    album_filter: Query<AlbumFilter>,
-) -> Result<Json<GenreInfo>> {
-    let genre_id = Uuid::parse_str(&genre)?;
-    let (page, limit) = get_pagination_params(album_filter);
-    let db_genre = db::get_genre(&state.db, genre_id).await?;
-    let db_similar_genres = db::get_similar_genres(&state.db, genre_id).await?;
-    let db_genre_albums = db::get_albums_for_genre(&state.db, genre_id, page, limit).await?;
-
-    Ok(Json(GenreInfo {
-        genre: db_genre,
-        similar_genres: db_similar_genres,
-        albums: db_genre_albums,
-    }))
-}
-
-pub async fn get_mood(
-    State(state): State<ApiContext>,
-    Path(mood): Path<String>,
-    album_filter: Query<AlbumFilter>,
-) -> Result<Json<MoodInfo>> {
-    let mood_id = Uuid::parse_str(&mood)?;
-    let (page, limit) = get_pagination_params(album_filter);
-    let db_mood = db::get_mood(&state.db, mood_id).await?;
-    let db_similar_moods = db::get_similar_moods(&state.db, mood_id).await?;
-    let db_mood_albums = db::get_albums_for_mood(&state.db, mood_id, page, limit).await?;
-    Ok(Json(MoodInfo {
-        mood: db_mood,
-        similar_moods: db_similar_moods,
-        albums: db_mood_albums,
-    }))
 }
 
 fn get_pagination_params(album_filter: Query<AlbumFilter>) -> (i64, i64) {
