@@ -11,12 +11,18 @@ use crate::{
     types::{Album, GenreInfo, MoodInfo, NewAlbum},
 };
 
-#[derive(Deserialize)]
-pub struct Pagination {
+#[derive(Deserialize, Clone)]
+pub struct AlbumFilter {
     #[serde(default)]
-    page: i64,
+    pub page: i64,
     #[serde(default)]
-    limit: i64,
+    pub limit: i64,
+
+    pub genres: Option<String>,
+    pub moods: Option<String>,
+    pub min_rating: Option<f64>,
+    pub since: Option<NaiveDate>,
+    pub to: Option<NaiveDate>,
 }
 
 pub async fn add_albums(
@@ -32,39 +38,39 @@ pub async fn add_albums(
 
 pub async fn get_albums(
     State(state): State<ApiContext>,
-    pagination: Query<Pagination>,
+    album_filter: Query<AlbumFilter>,
 ) -> Result<Json<Vec<Album>>> {
-    let (page, limit) = get_pagination_params(pagination);
-    Ok(Json(db::get_albums(&state.db, page, limit).await?))
+    let (page, limit) = get_pagination_params(album_filter.clone());
+    Ok(Json(db::get_albums(&state.db, page, limit, &album_filter).await?))
 }
 
 pub async fn get_artist(
     State(state): State<ApiContext>,
     Path(artist_id): Path<String>,
-    pagination: Query<Pagination>,
+    album_filter: Query<AlbumFilter>,
 ) -> Result<Json<Vec<Album>>> {
     let id = Uuid::parse_str(&artist_id)?;
-    let (page, limit) = get_pagination_params(pagination);
+    let (page, limit) = get_pagination_params(album_filter);
     Ok(Json(db::get_albums_for_artist(&state.db, id, page, limit).await?))
 }
 
 pub async fn get_albums_for_date(
     State(state): State<ApiContext>,
     Path(date): Path<String>,
-    pagination: Query<Pagination>,
+    album_filter: Query<AlbumFilter>,
 ) -> Result<Json<Vec<Album>>> {
     let parsed = NaiveDate::parse_from_str(&date, "%Y-%m-%d")?;
-    let (page, limit) = get_pagination_params(pagination);
+    let (page, limit) = get_pagination_params(album_filter);
     Ok(Json(db::get_albums_for_date(&state.db, parsed, page, limit).await?))
 }
 
 pub async fn get_genre(
     State(state): State<ApiContext>,
     Path(genre): Path<String>,
-    pagination: Query<Pagination>,
+    album_filter: Query<AlbumFilter>,
 ) -> Result<Json<GenreInfo>> {
     let genre_id = Uuid::parse_str(&genre)?;
-    let (page, limit) = get_pagination_params(pagination);
+    let (page, limit) = get_pagination_params(album_filter);
     let db_genre = db::get_genre(&state.db, genre_id).await?;
     let db_similar_genres = db::get_similar_genres(&state.db, genre_id).await?;
     let db_genre_albums = db::get_albums_for_genre(&state.db, genre_id, page, limit).await?;
@@ -79,10 +85,10 @@ pub async fn get_genre(
 pub async fn get_mood(
     State(state): State<ApiContext>,
     Path(mood): Path<String>,
-    pagination: Query<Pagination>,
+    album_filter: Query<AlbumFilter>,
 ) -> Result<Json<MoodInfo>> {
     let mood_id = Uuid::parse_str(&mood)?;
-    let (page, limit) = get_pagination_params(pagination);
+    let (page, limit) = get_pagination_params(album_filter);
     let db_mood = db::get_mood(&state.db, mood_id).await?;
     let db_similar_moods = db::get_similar_moods(&state.db, mood_id).await?;
     let db_mood_albums = db::get_albums_for_mood(&state.db, mood_id, page, limit).await?;
@@ -93,16 +99,16 @@ pub async fn get_mood(
     }))
 }
 
-fn get_pagination_params(pagination: Query<Pagination>) -> (i64, i64) {
-    let limit = if pagination.limit == 0 {
+fn get_pagination_params(album_filter: Query<AlbumFilter>) -> (i64, i64) {
+    let limit = if album_filter.limit == 0 {
         25
     } else {
-        pagination.limit
+        album_filter.limit
     };
-    let page = if pagination.page == 0 {
+    let page = if album_filter.page == 0 {
         1
     } else {
-        pagination.page
+        album_filter.page
     };
     (page, limit)
 }

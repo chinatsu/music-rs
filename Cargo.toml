@@ -16,4 +16,4 @@ futures = "0.3.31"
 thiserror = "2.0.12"
 axum-response-cache = "0.4.0"
 slab = "0.4.11"
-chrono = "0.4.42"
+chrono = { version = "0.4.42", features = ["serde"] }
