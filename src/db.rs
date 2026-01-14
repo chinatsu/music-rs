@@ -52,7 +52,7 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64, filters: &crate::rou
             COALESCE(json_agg(DISTINCT jsonb_build_object('id', ar.id, 'name', ar.name)) FILTER (WHERE ar.id IS NOT NULL), '[]') as artists,
             COALESCE(json_agg(DISTINCT jsonb_build_object('id', g.id, 'name', g.name)) FILTER (WHERE g.id IS NOT NULL), '[]') as genres,
             COALESCE(json_agg(DISTINCT jsonb_build_object('id', m.id, 'name', m.name)) FILTER (WHERE m.id IS NOT NULL), '[]') as moods,
-            COALESCE(json_agg(DISTINCT jsonb_build_object('track_number', t.track_number, 'title', t.title) ORDER BY t.track_number) FILTER (WHERE t.id IS NOT NULL), '[]') as tracks
+            COALESCE(json_agg(jsonb_build_object('track_number', t.track_number, 'title', t.title) ORDER BY t.track_number) FILTER (WHERE t.id IS NOT NULL), '[]') as tracks
         FROM albums al
         LEFT JOIN album_artists aa ON al.id = aa.album_id
         LEFT JOIN artists ar ON aa.artist_id = ar.id
