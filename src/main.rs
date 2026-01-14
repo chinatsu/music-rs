@@ -35,6 +35,14 @@ async fn main() -> Result<()> {
             get(routes::get_albums).layer(CacheLayer::with_lifespan(Duration::from_secs(1))),
         )
         .route("/update", post(routes::add_albums))
+        .route(
+            "/genre/{genre}",
+            get(routes::get_genre).layer(CacheLayer::with_lifespan(Duration::from_secs(1))),
+        )
+        .route(
+            "/mood/{mood}",
+            get(routes::get_mood).layer(CacheLayer::with_lifespan(Duration::from_secs(1))),
+        )
         .route("/artist/{artist_id}", get(routes::get_artist))
         .with_state(ApiContext { db });
 

@@ -1,5 +1,4 @@
-use chrono::NaiveDate;
-use sqlx::{PgPool, query, query_as, types::chrono::Utc, QueryBuilder, Postgres, Row};
+use sqlx::{PgPool, Postgres, QueryBuilder, Row, query, query_as, types::chrono::Utc};
 use uuid::Uuid;
 
 use crate::{
@@ -36,14 +35,21 @@ pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
     })
 }
 
-pub async fn get_albums(db: &PgPool, page: i64, limit: i64, filters: &crate::routes::AlbumFilter) -> Result<Vec<Album>> {
+pub async fn get_albums(
+    db: &PgPool,
+    page: i64,
+    limit: i64,
+    filters: &crate::routes::AlbumFilter,
+) -> Result<Vec<Album>> {
     // Parse genre and mood names if provided
-    let genre_names: Option<Vec<String>> = filters.genres.as_ref().map(|g: &String| {
-        g.split(',').map(|s: &str| s.trim().to_string()).collect()
-    });
-    let mood_names: Option<Vec<String>> = filters.moods.as_ref().map(|m: &String| {
-        m.split(',').map(|s: &str| s.trim().to_string()).collect()
-    });
+    let genre_names: Option<Vec<String>> = filters
+        .genres
+        .as_ref()
+        .map(|g: &String| g.split(',').map(|s: &str| s.trim().to_string()).collect());
+    let mood_names: Option<Vec<String>> = filters
+        .moods
+        .as_ref()
+        .map(|m: &String| m.split(',').map(|s: &str| s.trim().to_string()).collect());
 
     let mut builder: QueryBuilder<Postgres> = QueryBuilder::new(
         r#"
@@ -66,7 +72,7 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64, filters: &crate::rou
                       WHERE t.album_id = al.id), '[]') as tracks
         FROM albums al
         WHERE al.voters != 0
-        "#
+        "#,
     );
 
     // Add genre filter - album must have ALL specified genres
@@ -107,29 +113,34 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64, filters: &crate::rou
     builder.push_bind((page - 1) * limit);
 
     let query = builder.build();
-    Ok(query.fetch_all(db).await?.into_iter().map(|row| {
-        use sqlx::types::JsonValue;
-        
-        let artists_json: JsonValue = row.get("artists");
-        let genres_json: JsonValue = row.get("genres");
-        let moods_json: JsonValue = row.get("moods");
-        let tracks_json: JsonValue = row.get("tracks");
-        
-        Album {
-            id: row.get("id"),
-            title: row.get("title"),
-            date: row.get("date"),
-            url: row.get("url"),
-            rym_url: row.get("rym_url"),
-            score: row.get("score"),
-            voters: row.get("voters"),
-            modified_date: row.get("modified_date"),
-            artists: serde_json::from_value(artists_json).ok(),
-            genres: serde_json::from_value(genres_json).ok(),
-            moods: serde_json::from_value(moods_json).ok(),
-            tracks: serde_json::from_value(tracks_json).ok(),
-        }
-    }).collect())
+    Ok(query
+        .fetch_all(db)
+        .await?
+        .into_iter()
+        .map(|row| {
+            use sqlx::types::JsonValue;
+
+            let artists_json: JsonValue = row.get("artists");
+            let genres_json: JsonValue = row.get("genres");
+            let moods_json: JsonValue = row.get("moods");
+            let tracks_json: JsonValue = row.get("tracks");
+
+            Album {
+                id: row.get("id"),
+                title: row.get("title"),
+                date: row.get("date"),
+                url: row.get("url"),
+                rym_url: row.get("rym_url"),
+                score: row.get("score"),
+                voters: row.get("voters"),
+                modified_date: row.get("modified_date"),
+                artists: serde_json::from_value(artists_json).ok(),
+                genres: serde_json::from_value(genres_json).ok(),
+                moods: serde_json::from_value(moods_json).ok(),
+                tracks: serde_json::from_value(tracks_json).ok(),
+            }
+        })
+        .collect())
 }
 
 pub async fn get_albums_for_artist(
@@ -175,9 +186,9 @@ pub async fn get_albums_for_artist(
     )
 }
 
-pub async fn get_albums_for_date(
+pub async fn get_albums_for_genre(
     db: &PgPool,
-    date: NaiveDate,
+    genre_id: Uuid,
     page: i64,
     limit: i64,
 ) -> Result<Vec<Album>> {
@@ -205,12 +216,55 @@ pub async fn get_albums_for_date(
         LEFT JOIN album_moods am ON al.id = am.album_id
         LEFT JOIN moods m ON am.mood_id = m.id
         LEFT JOIN tracks t ON al.id = t.album_id
-        WHERE al.date = $1 AND al.voters != 0
+        WHERE $1 = ANY(SELECT ge.id FROM genres ge JOIN album_genres alg ON alg.genre_id = ge.id AND al.id = alg.album_id) AND al.voters != 0
         GROUP BY al.id
-        ORDER BY al.score desc
+        ORDER BY al.date desc, al.score desc
         LIMIT $2
         OFFSET $3"#,
-        date,
+        genre_id,
+        limit,
+        (page - 1) * limit
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+pub async fn get_albums_for_mood(
+    db: &PgPool,
+    mood_id: Uuid,
+    page: i64,
+    limit: i64,
+) -> Result<Vec<Album>> {
+    Ok(query_as!(
+        Album,
+        r#"
+        SELECT 
+            al.id as "id",
+            al.title as "title",
+            al.date as "date",
+            al.url as "url",
+            al.rym_url as "rym_url",
+            al.score as "score",
+            al.voters as "voters",
+            al.modified_date as "modified_date",
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.track_number, t.title)) filter (where t.id is not null), '{NULL}'), '{}') as "tracks?: Vec<Track>"
+        FROM albums al
+        LEFT JOIN album_artists aa ON al.id = aa.album_id
+        LEFT JOIN artists ar ON aa.artist_id = ar.id
+        LEFT JOIN album_genres ag ON al.id = ag.album_id
+        LEFT JOIN genres g ON ag.genre_id = g.id
+        LEFT JOIN album_moods am ON al.id = am.album_id
+        LEFT JOIN moods m ON am.mood_id = m.id
+        LEFT JOIN tracks t ON al.id = t.album_id
+        WHERE $1 = ANY(SELECT mo.id FROM moods mo JOIN album_moods alm ON alm.mood_id = mo.id AND al.id = alm.album_id) AND al.voters != 0
+        GROUP BY al.id
+        ORDER BY al.date desc, al.score desc
+        LIMIT $2
+        OFFSET $3"#,
+        mood_id,
         limit,
         (page - 1) * limit
     )
