@@ -49,18 +49,22 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64, filters: &crate::rou
         r#"
         SELECT 
             al.id, al.title, al.date, al.url, al.rym_url, al.score, al.voters, al.modified_date,
-            COALESCE(json_agg(DISTINCT jsonb_build_object('id', ar.id, 'name', ar.name)) FILTER (WHERE ar.id IS NOT NULL), '[]') as artists,
-            COALESCE(json_agg(DISTINCT jsonb_build_object('id', g.id, 'name', g.name)) FILTER (WHERE g.id IS NOT NULL), '[]') as genres,
-            COALESCE(json_agg(DISTINCT jsonb_build_object('id', m.id, 'name', m.name)) FILTER (WHERE m.id IS NOT NULL), '[]') as moods,
-            COALESCE(json_agg(jsonb_build_object('track_number', t.track_number, 'title', t.title) ORDER BY t.track_number) FILTER (WHERE t.id IS NOT NULL), '[]') as tracks
+            COALESCE((SELECT json_agg(DISTINCT jsonb_build_object('id', ar.id, 'name', ar.name))
+                      FROM album_artists aa
+                      JOIN artists ar ON aa.artist_id = ar.id
+                      WHERE aa.album_id = al.id), '[]') as artists,
+            COALESCE((SELECT json_agg(DISTINCT jsonb_build_object('id', g.id, 'name', g.name))
+                      FROM album_genres ag
+                      JOIN genres g ON ag.genre_id = g.id
+                      WHERE ag.album_id = al.id), '[]') as genres,
+            COALESCE((SELECT json_agg(DISTINCT jsonb_build_object('id', m.id, 'name', m.name))
+                      FROM album_moods am
+                      JOIN moods m ON am.mood_id = m.id
+                      WHERE am.album_id = al.id), '[]') as moods,
+            COALESCE((SELECT json_agg(jsonb_build_object('track_number', t.track_number, 'title', t.title) ORDER BY t.track_number)
+                      FROM tracks t
+                      WHERE t.album_id = al.id), '[]') as tracks
         FROM albums al
-        LEFT JOIN album_artists aa ON al.id = aa.album_id
-        LEFT JOIN artists ar ON aa.artist_id = ar.id
-        LEFT JOIN album_genres ag ON al.id = ag.album_id
-        LEFT JOIN genres g ON ag.genre_id = g.id
-        LEFT JOIN album_moods am ON al.id = am.album_id
-        LEFT JOIN moods m ON am.mood_id = m.id
-        LEFT JOIN tracks t ON al.id = t.album_id
         WHERE al.voters != 0
         "#
     );
@@ -97,7 +101,7 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64, filters: &crate::rou
         builder.push_bind(to);
     }
 
-    builder.push(" GROUP BY al.id ORDER BY al.date desc, al.score desc LIMIT ");
+    builder.push(" ORDER BY al.date desc, al.score desc LIMIT ");
     builder.push_bind(limit);
     builder.push(" OFFSET ");
     builder.push_bind((page - 1) * limit);
