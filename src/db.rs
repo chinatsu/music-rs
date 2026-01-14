@@ -49,10 +49,10 @@ pub async fn get_albums(db: &PgPool, page: i64, limit: i64, filters: &crate::rou
         r#"
         SELECT 
             al.id, al.title, al.date, al.url, al.rym_url, al.score, al.voters, al.modified_date,
-            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name)) filter (where ar.id is not null), '{NULL}'), '{}') as artists,
-            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as genres,
-            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as moods,
-            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.track_number, t.title)) filter (where t.id is not null), '{NULL}'), '{}') as tracks
+            COALESCE(json_agg(DISTINCT jsonb_build_object('id', ar.id, 'name', ar.name)) FILTER (WHERE ar.id IS NOT NULL), '[]') as artists,
+            COALESCE(json_agg(DISTINCT jsonb_build_object('id', g.id, 'name', g.name)) FILTER (WHERE g.id IS NOT NULL), '[]') as genres,
+            COALESCE(json_agg(DISTINCT jsonb_build_object('id', m.id, 'name', m.name)) FILTER (WHERE m.id IS NOT NULL), '[]') as moods,
+            COALESCE(json_agg(DISTINCT jsonb_build_object('track_number', t.track_number, 'title', t.title) ORDER BY t.track_number) FILTER (WHERE t.id IS NOT NULL), '[]') as tracks
         FROM albums al
         LEFT JOIN album_artists aa ON al.id = aa.album_id
         LEFT JOIN artists ar ON aa.artist_id = ar.id
