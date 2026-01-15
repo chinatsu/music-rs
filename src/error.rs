@@ -10,6 +10,7 @@ pub enum AppError {
     Anyhow(anyhow::Error),
     Sqlx(sqlx::Error),
     Parse(chrono::ParseError),
+    Deserialize(serde_json::Error),
     VarError(env::VarError),
     IoError(std::io::Error),
     UuidError(uuid::Error),
@@ -24,6 +25,7 @@ impl Display for AppError {
             AppError::VarError(error) => error.fmt(f),
             AppError::IoError(error) => error.fmt(f),
             AppError::UuidError(error) => error.fmt(f),
+            AppError::Deserialize(error) => error.fmt(f),
         }
     }
 }
@@ -72,5 +74,11 @@ impl From<std::io::Error> for AppError {
 impl From<uuid::Error> for AppError {
     fn from(err: uuid::Error) -> Self {
         Self::UuidError(err)
+    }
+}
+
+impl From<serde_json::Error> for AppError {
+    fn from(err: serde_json::Error) -> Self {
+        Self::Deserialize(err)
     }
 }

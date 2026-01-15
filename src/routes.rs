@@ -18,11 +18,24 @@ pub struct AlbumFilter {
     #[serde(default)]
     pub limit: i64,
 
-    pub genres: Option<String>,
-    pub moods: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_comma_separated")]
+    pub genres: Vec<String>,
+    #[serde(default, deserialize_with = "deserialize_comma_separated")]
+    pub moods: Vec<String>,
     pub min_rating: Option<f64>,
     pub since: Option<NaiveDate>,
     pub to: Option<NaiveDate>,
+}
+
+fn deserialize_comma_separated<'de, D>(deserializer: D) -> std::result::Result<Vec<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s: Option<String> = Option::deserialize(deserializer)?;
+    Ok(
+        s.map(|s| s.split(',').map(|s| s.trim().to_string()).collect())
+            .unwrap_or_default(),
+    )
 }
 
 pub async fn add_albums(
@@ -41,7 +54,9 @@ pub async fn get_albums(
     album_filter: Query<AlbumFilter>,
 ) -> Result<Json<Vec<Album>>> {
     let (page, limit) = get_pagination_params(album_filter.clone());
-    Ok(Json(db::get_albums(&state.db, page, limit, &album_filter).await?))
+    Ok(Json(
+        db::get_albums(&state.db, page, limit, &album_filter).await?,
+    ))
 }
 
 pub async fn get_genre(
@@ -79,7 +94,6 @@ pub async fn get_mood(
     }))
 }
 
-
 pub async fn get_artist(
     State(state): State<ApiContext>,
     Path(artist_id): Path<String>,
@@ -87,7 +101,9 @@ pub async fn get_artist(
 ) -> Result<Json<Vec<Album>>> {
     let id = Uuid::parse_str(&artist_id)?;
     let (page, limit) = get_pagination_params(album_filter);
-    Ok(Json(db::get_albums_for_artist(&state.db, id, page, limit).await?))
+    Ok(Json(
+        db::get_albums_for_artist(&state.db, id, page, limit).await?,
+    ))
 }
 
 fn get_pagination_params(album_filter: Query<AlbumFilter>) -> (i64, i64) {
