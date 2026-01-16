@@ -41,15 +41,47 @@ function getArtistFromUnlinked(artist_string) {
   return artist_string;
 }
 
+// note: vibe coded
+function cleanTrackTitle(title) {
+  // Keywords that indicate the parenthetical content should be kept
+  const keepKeywords =
+    /\b(feat\.?|ft\.?|featuring|with|vs\.?|versus|remix|edit|mix|version|live|demo|instrumental|acoustic|reprise|part|pt\.?)\b/i;
+
+  // Check if there's parenthetical content
+  const parenMatch = title.match(/^(.+?)\s*\((.+?)\)\s*$/);
+  if (!parenMatch) return title;
+
+  const mainTitle = parenMatch[1].trim();
+  const parenContent = parenMatch[2].trim();
+
+  // Keep if parentheses contain music-related keywords
+  if (keepKeywords.test(parenContent)) {
+    return title;
+  }
+
+  // Check if main title has non-Latin chars and paren content is mostly Latin
+  // This suggests a translation scenario
+  const hasNonLatin = /[^\x00-\x7F]/.test(mainTitle);
+  const parenIsLatin = /^[\x00-\x7F\s]+$/.test(parenContent);
+
+  if (hasNonLatin && parenIsLatin) {
+    // Likely a translation, remove it
+    return mainTitle;
+  }
+
+  // Default: keep the full title to be safe
+  return title;
+}
+
 function getTrackFromUnlinked(track_number, track) {
   const split = track.split(" - ");
   if (split.length == 2) {
     // there is likely an artist and a title here.
-    var artist = split[0];
-    var title = split[1];
+    var artist = getArtistFromUnlinked(split[0]);
+    var title = cleanTrackTitle(split[1]);
     return { track_number, artist, title };
   }
-  return { track_number, title: track };
+  return { track_number, title: cleanTrackTitle(track) };
 }
 
 function copyAction(event) {
@@ -83,7 +115,7 @@ function copyAction(event) {
     var artist = song.querySelector(".artist");
     var title = song.querySelector(".song");
     if (artist && title) {
-      var songtitle = title.textContent.replace(" - ", "");
+      var songtitle = cleanTrackTitle(title.textContent.replace(" - ", ""));
       return {
         track_number: idx + 1,
         // i know it's possible to extract the original name here, but i got lazy
@@ -92,7 +124,10 @@ function copyAction(event) {
       };
     }
     if (title) {
-      return { track_number: idx + 1, title: title.textContent };
+      return {
+        track_number: idx + 1,
+        title: cleanTrackTitle(title.textContent),
+      };
     }
     // at this point, we know the element is plaintext
     return getTrackFromUnlinked(idx + 1, song.textContent.trim());
