@@ -33,6 +33,25 @@ function getAlbumName(album) {
   return album.firstChild.textContent.trim();
 }
 
+function getArtistFromUnlinked(artist_string) {
+  if (!artist_string.startsWith("[") && artist_string.endsWith("]")) {
+    // we might have a localized name here
+    return artist_string.split("[")[0].trim();
+  }
+  return artist_string;
+}
+
+function getTrackFromUnlinked(track_number, track) {
+  const split = track.split(" - ");
+  if (split.length == 2) {
+    // there is likely an artist and a title here.
+    var artist = split[0];
+    var title = split[1];
+    return { track_number, artist, title };
+  }
+  return { track_number, title: track };
+}
+
 function copyAction(event) {
   var info = document.querySelector("table.album_info");
   var media = document.getElementById("media_link_button_container_top");
@@ -63,15 +82,20 @@ function copyAction(event) {
   ].map((song, idx) => {
     var artist = song.querySelector(".artist");
     var title = song.querySelector(".song");
-    if (artist) {
+    if (artist && title) {
       var songtitle = title.textContent.replace(" - ", "");
       return {
         track_number: idx + 1,
-        artist: artist.textContent,
+        // i know it's possible to extract the original name here, but i got lazy
+        artist: getArtistFromUnlinked(artist.textContent),
         title: songtitle,
       };
     }
-    return { track_number: idx + 1, title: title.textContent };
+    if (title) {
+      return { track_number: idx + 1, title: title.textContent };
+    }
+    // at this point, we know the element is plaintext
+    return getTrackFromUnlinked(idx + 1, song.textContent.trim());
   });
   var dateString = [...info.querySelectorAll("th.info_hdr")].filter((element) =>
     element.textContent.match("Released")
@@ -109,14 +133,17 @@ function copyAction(event) {
 }
 
 function sendData(release) {
+  var headers = {
+    "Content-Type": "application/json",
+  };
+  if (typeof TOKEN !== "undefined") {
+    headers["Authorization"] = `Bearer ${TOKEN}`;
+  }
   var method = {
     method: "POST",
     url: SERVER_URL,
     data: JSON.stringify(release),
-    headers: {
-      "Content-Type": "application/json",
-      // "Authorization": "Bearer " + TOKEN
-    },
+    headers: headers,
     responseType: "json",
     onload: function (response) {
       console.log("sent some data :)");
