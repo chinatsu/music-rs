@@ -27,7 +27,9 @@ pub struct AlbumFilter {
     pub to: Option<NaiveDate>,
 }
 
-fn deserialize_comma_separated<'de, D>(deserializer: D) -> std::result::Result<Vec<String>, D::Error>
+fn deserialize_comma_separated<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Vec<String>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
