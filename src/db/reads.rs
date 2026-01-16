@@ -38,6 +38,7 @@ pub async fn get_albums(
                       LEFT JOIN artists ta ON t.artist = ta.id
                       WHERE t.album_id = al.id), '[]') as tracks
         FROM albums al
+        WHERE 1=1
         "#,
     );
 
