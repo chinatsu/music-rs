@@ -38,12 +38,10 @@ function copyAction(event) {
   var media = document.getElementById("media_link_button_container_top");
   var links = JSON.parse(media.dataset.links);
   var album = getAlbumName(document.getElementsByClassName("album_title")[0]);
-  var score = getFloat(
-    document.querySelector('meta[itemprop="ratingValue"]').content
-  );
-  var voters = getInt(
-    document.querySelector('meta[itemprop="ratingCount"]').content
-  );
+  var rating = document.querySelector('meta[itemprop="ratingValue"]');
+  var score = getFloat(rating ? rating.content : "0.0");
+  var votes = document.querySelector('meta[itemprop="ratingCount"]');
+  var voters = getInt(votes ? votes.content : "0");
   var artists = [].slice
     .call(info.getElementsByClassName("artist"))
     .map((artist) => getArtistName(artist));
@@ -59,9 +57,21 @@ function copyAction(event) {
     )
     .filter((mood) => mood);
   var tracks = [
-    ...document.querySelectorAll(".tracklist_line > span > .song"),
+    ...document.querySelectorAll(
+      "#tracks > .track > .tracklist_line > .tracklist_title"
+    ),
   ].map((song, idx) => {
-    return { track_number: idx + 1, title: song.textContent };
+    var artist = song.querySelector(".artist");
+    var title = song.querySelector(".song");
+    if (artist) {
+      var songtitle = title.textContent.replace(" - ", "");
+      return {
+        track_number: idx + 1,
+        artist: artist.textContent,
+        title: songtitle,
+      };
+    }
+    return { track_number: idx + 1, title: title.textContent };
   });
   var dateString = [...info.querySelectorAll("th.info_hdr")].filter((element) =>
     element.textContent.match("Released")

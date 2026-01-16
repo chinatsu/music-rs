@@ -27,7 +27,7 @@ pub struct NewAlbum {
     pub date: NaiveDate,
     pub genres: Vec<String>,
     pub moods: Vec<String>,
-    pub tracks: Vec<Track>,
+    pub tracks: Vec<NewTrack>,
     pub url: String,
     pub rym_url: String,
     pub score: f32,
@@ -55,9 +55,18 @@ pub struct Artist {
 }
 
 #[derive(sqlx::Type, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Debug)]
-pub struct Track {
+pub struct NewTrack {
     pub track_number: i32,
     pub title: String,
+    pub artist: Option<String>,
+}
+
+#[derive(sqlx::Type, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Debug)]
+pub struct Track {
+    pub id: Uuid,
+    pub track_number: i32,
+    pub title: String,
+    pub artist: Option<Artist>,
 }
 
 #[derive(sqlx::Type, Serialize, Deserialize, Debug)]

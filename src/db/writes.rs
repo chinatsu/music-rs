@@ -4,7 +4,7 @@ use uuid::Uuid;
 use crate::{
     Result,
     error::AppError,
-    types::{Album, Artist, Genre, InsertedAlbum, Mood, NewAlbum, Track},
+    types::{Album, Artist, Genre, InsertedAlbum, Mood, NewAlbum, NewTrack, Track},
 };
 
 pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
@@ -135,22 +135,39 @@ async fn add_artists(artists: &[String], db: &PgPool) -> Result<Vec<Artist>> {
     Ok(futures::future::join_all(stream).await)
 }
 
-async fn add_tracks(album_id: Uuid, tracks: &[Track], db: &PgPool) -> Result<Vec<Track>> {
+async fn add_tracks(album_id: Uuid, tracks: &[NewTrack], db: &PgPool) -> Result<Vec<Track>> {
     sqlx::query!("DELETE FROM tracks WHERE album_id = $1", album_id)
         .execute(db)
         .await?;
     for track in tracks {
+        let artist_id = if let Some(artist_name) = &track.artist {
+            Some(get_or_create_artist(artist_name.clone(), db).await?.id)
+        } else {
+            None
+        };
         sqlx::query!(
-            "INSERT INTO tracks(album_id, track_number, title) 
-            VALUES ($1, $2, $3)",
+            "INSERT INTO tracks(album_id, track_number, title, artist) 
+            VALUES ($1, $2, $3, $4)",
             album_id,
             track.track_number,
-            track.title
+            track.title,
+            artist_id
         )
         .execute(db)
         .await?;
     }
-    Ok(tracks.to_vec())
+    let returned_tracks = sqlx::query_as!(
+        Track,
+        r#"SELECT t.id, t.track_number, t.title, a as "artist?: Artist"
+        FROM tracks t
+        LEFT JOIN artists a ON t.artist = a.id
+        WHERE t.album_id = $1
+        ORDER BY t.track_number"#,
+        album_id
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(returned_tracks)
 }
 
 async fn get_or_create_genre(genre: String, db: &PgPool) -> Result<Genre> {
