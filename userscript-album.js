@@ -50,14 +50,14 @@ function cleanTrackTitle(uncleanTitle) {
 
   // Check if there's parenthetical content
   const parenMatch = title.match(/^(.+?)\s*\((.+?)\)\s*$/);
-  if (!parenMatch) return (title, null);
+  if (!parenMatch) return [title, null];
 
   const mainTitle = parenMatch[1].trim();
   const parenContent = parenMatch[2].trim();
 
   // Keep if parentheses contain music-related keywords
   if (keepKeywords.test(parenContent)) {
-    return (title, null);
+    return [title, null];
   }
 
   // Check if main title has non-Latin chars and paren content is mostly Latin
@@ -67,11 +67,11 @@ function cleanTrackTitle(uncleanTitle) {
 
   if (hasNonLatin && parenIsLatin) {
     // Likely a translation, remove it
-    return (mainTitle, parenContent);
+    return [mainTitle, parenContent];
   }
 
   // Default: keep the full title to be safe
-  return (title, null);
+  return [title, null];
 }
 
 function getTrackFromUnlinked(track_number, track) {
