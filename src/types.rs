@@ -24,7 +24,7 @@ pub struct Album {
 pub struct NewAlbum {
     pub album: String,
     pub localized_title: Option<String>,
-    pub artists: Vec<String>,
+    pub artists: Vec<NewArtist>,
     #[serde(with = "my_date_format")]
     pub date: NaiveDate,
     pub genres: Vec<String>,
@@ -52,16 +52,24 @@ pub struct InsertedAlbum {
 }
 
 #[derive(sqlx::Type, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Debug)]
+pub struct NewArtist {
+    pub name: String,
+    pub localized_name: Option<String>,
+}
+
+#[derive(sqlx::Type, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Artist {
     pub id: Uuid,
     pub name: String,
+    pub localized_name: Option<String>,
 }
 
 #[derive(sqlx::Type, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct NewTrack {
     pub track_number: i32,
     pub title: String,
-    pub artist: Option<String>,
+    pub localized_title: Option<String>,
+    pub artist: Option<NewArtist>,
 }
 
 #[derive(sqlx::Type, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Debug)]
@@ -69,6 +77,7 @@ pub struct Track {
     pub id: Uuid,
     pub track_number: i32,
     pub title: String,
+    pub localized_title: Option<String>,
     pub artist: Option<Artist>,
 }
 

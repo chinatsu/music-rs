@@ -4,7 +4,7 @@ use uuid::Uuid;
 use crate::{
     Result,
     error::AppError,
-    types::{Album, Artist, Genre, InsertedAlbum, Mood, NewAlbum, NewTrack, Track},
+    types::{Album, Artist, Genre, InsertedAlbum, Mood, NewAlbum, NewArtist, NewTrack, Track},
 };
 
 pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
@@ -131,10 +131,10 @@ async fn add_moods(moods: &[String], db: &PgPool) -> Result<Vec<Mood>> {
     Ok(futures::future::join_all(stream).await)
 }
 
-async fn add_artists(artists: &[String], db: &PgPool) -> Result<Vec<Artist>> {
+async fn add_artists(artists: &[NewArtist], db: &PgPool) -> Result<Vec<Artist>> {
     let stream = artists
         .iter()
-        .map(async |a| get_or_create_artist(a.to_string(), db).await.unwrap());
+        .map(async |a| get_or_create_artist(a.clone(), db).await.unwrap());
     Ok(futures::future::join_all(stream).await)
 }
 
@@ -143,8 +143,8 @@ async fn add_tracks(album_id: Uuid, tracks: &[NewTrack], db: &PgPool) -> Result<
         .execute(db)
         .await?;
     for track in tracks {
-        let artist_id = if let Some(artist_name) = &track.artist {
-            Some(get_or_create_artist(artist_name.clone(), db).await?.id)
+        let artist_id = if let Some(artist) = &track.artist {
+            Some(get_or_create_artist(artist.clone(), db).await?.id)
         } else {
             None
         };
@@ -161,7 +161,7 @@ async fn add_tracks(album_id: Uuid, tracks: &[NewTrack], db: &PgPool) -> Result<
     }
     let returned_tracks = sqlx::query_as!(
         Track,
-        r#"SELECT t.id, t.track_number, t.title, a as "artist?: Artist"
+        r#"SELECT t.id, t.track_number, t.title, t.localized_title, a as "artist?: Artist"
         FROM tracks t
         LEFT JOIN artists a ON t.artist = a.id
         WHERE t.album_id = $1
@@ -201,15 +201,20 @@ async fn get_or_create_mood(mood: String, db: &PgPool) -> Result<Mood> {
     Ok(mood)
 }
 
-async fn get_or_create_artist(artist: String, db: &PgPool) -> Result<Artist> {
+async fn get_or_create_artist(artist: NewArtist, db: &PgPool) -> Result<Artist> {
     let _ = query_as!(
         Artist,
-        "INSERT INTO artists(name) VALUES ($1) ON CONFLICT DO NOTHING RETURNING id, name",
-        artist
+        r#"INSERT INTO artists(name, localized_name) 
+        VALUES ($1, $2)
+        ON CONFLICT (name) 
+        DO UPDATE SET localized_name = $2
+        RETURNING id, name, localized_name"#,
+        artist.name,
+        artist.localized_name
     )
     .fetch_one(db)
     .await;
-    let artist = query_as!(Artist, "SELECT * FROM artists WHERE name = $1", artist)
+    let artist = query_as!(Artist, "SELECT * FROM artists WHERE name = $1", artist.name)
         .fetch_one(db)
         .await?;
     Ok(artist)
