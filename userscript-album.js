@@ -41,7 +41,6 @@ function getArtistFromUnlinked(artist_string) {
   return artist_string;
 }
 
-// note: vibe coded
 function cleanTrackTitle(uncleanTitle) {
   const title = uncleanTitle.split("\n")[0].trim();
   // Keywords that indicate the parenthetical content should be kept
@@ -118,7 +117,9 @@ function copyAction(event) {
     var artist = song.querySelector(".artist");
     var title = song.querySelector(".song");
     if (artist && title) {
-      var [songtitle, _] = cleanTrackTitle(title.textContent.replace(" - ", ""));
+      var [songtitle, _] = cleanTrackTitle(
+        title.textContent.replace(" - ", ""),
+      );
       return {
         track_number: idx + 1,
         artist: getArtistFromUnlinked(artist.textContent),
