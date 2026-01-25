@@ -42,7 +42,8 @@ function getArtistFromUnlinked(artist_string) {
 }
 
 // note: vibe coded
-function cleanTrackTitle(title) {
+function cleanTrackTitle(uncleanTitle) {
+  const title = uncleanTitle.split("\n")[0].trim();
   // Keywords that indicate the parenthetical content should be kept
   const keepKeywords =
     /\b(feat\.?|ft\.?|featuring|with|vs\.?|versus|remix|edit|mix|version|live|demo|instrumental|acoustic|reprise|part|pt\.?)\b/i;
@@ -104,12 +105,12 @@ function copyAction(event) {
       info
         .querySelector(".release_pri_descriptors")
         .textContent.split(", ")
-        .map((mood) => mood.trim().toLowerCase())
+        .map((mood) => mood.trim().toLowerCase()),
     )
     .filter((mood) => mood);
   var tracks = [
     ...document.querySelectorAll(
-      "#tracks > .track > .tracklist_line > .tracklist_title"
+      "#tracks > .track > .tracklist_line > .tracklist_title",
     ),
   ].map((song, idx) => {
     var artist = song.querySelector(".artist");
@@ -118,7 +119,6 @@ function copyAction(event) {
       var songtitle = cleanTrackTitle(title.textContent.replace(" - ", ""));
       return {
         track_number: idx + 1,
-        // i know it's possible to extract the original name here, but i got lazy
         artist: getArtistFromUnlinked(artist.textContent),
         title: songtitle,
       };
@@ -133,7 +133,7 @@ function copyAction(event) {
     return getTrackFromUnlinked(idx + 1, song.textContent.trim());
   });
   var dateString = [...info.querySelectorAll("th.info_hdr")].filter((element) =>
-    element.textContent.match("Released")
+    element.textContent.match("Released"),
   )[0].nextSibling.textContent;
   if (dateString.split(" ").length != 3) {
     if (dateString.split(" ").length === 1) {
