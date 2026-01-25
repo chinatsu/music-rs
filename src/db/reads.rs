@@ -7,6 +7,7 @@ use super::filters::{
 };
 use crate::{
     Result,
+    db::filters::apply_url_filter,
     types::{Album, Artist, Genre, Mood, SimilarGenre, SimilarMood, Track},
 };
 
@@ -42,6 +43,7 @@ pub async fn get_albums(
         "#,
     );
 
+    apply_url_filter(&mut builder, filters.url.clone());
     apply_genre_filter(&mut builder, &filters.genres);
     apply_mood_filter(&mut builder, &filters.moods);
     apply_rating_filter(&mut builder, filters.min_rating);

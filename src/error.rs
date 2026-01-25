@@ -52,7 +52,6 @@ impl From<sqlx::Error> for AppError {
     }
 }
 
-
 impl From<chrono::ParseError> for AppError {
     fn from(err: chrono::ParseError) -> Self {
         Self::Parse(err)

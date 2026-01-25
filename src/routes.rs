@@ -25,6 +25,7 @@ pub struct AlbumFilter {
     pub min_rating: Option<f64>,
     pub since: Option<NaiveDate>,
     pub to: Option<NaiveDate>,
+    pub url: Option<String>,
 }
 
 fn deserialize_comma_separated<'de, D>(

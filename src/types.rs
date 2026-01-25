@@ -88,7 +88,6 @@ pub struct SimilarGenre {
     pub count: Option<i64>,
 }
 
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SimilarMood {
     pub id: Uuid,

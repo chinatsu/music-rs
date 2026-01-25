@@ -40,6 +40,14 @@ pub fn apply_date_range_filter(
     }
 }
 
+pub fn apply_url_filter(builder: &mut QueryBuilder<Postgres>, url: Option<String>) {
+    if let Some(url) = url {
+        builder.push(" AND al.url = '%");
+        builder.push_bind(url);
+        builder.push("%' ");
+    }
+}
+
 pub fn apply_pagination(builder: &mut QueryBuilder<Postgres>, page: i64, limit: i64) {
     builder.push(" ORDER BY al.date desc, al.score desc LIMIT ");
     builder.push_bind(limit);
