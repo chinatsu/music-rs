@@ -20,7 +20,7 @@ pub async fn get_albums(
     let mut builder: QueryBuilder<Postgres> = QueryBuilder::new(
         r#"
         SELECT 
-            al.id, al.title, al.date, al.url, al.rym_url, al.score, al.voters, al.modified_date,
+            al.id, al.title, al.localized_title, al.date, al.url, al.rym_url, al.score, al.voters, al.modified_date,
             COALESCE((SELECT json_agg(DISTINCT jsonb_build_object('id', ar.id, 'name', ar.name))
                       FROM album_artists aa
                       JOIN artists ar ON aa.artist_id = ar.id
@@ -66,6 +66,7 @@ pub async fn get_albums(
             Album {
                 id: row.get("id"),
                 title: row.get("title"),
+                localized_title: row.get("localized_title"),
                 date: row.get("date"),
                 url: row.get("url"),
                 rym_url: row.get("rym_url"),
@@ -93,6 +94,7 @@ pub async fn get_albums_for_artist(
         SELECT 
             al.id as "id",
             al.title as "title",
+            al.localized_title as "localized_title",
             al.date as "date",
             al.url as "url",
             al.rym_url as "rym_url",
@@ -137,6 +139,7 @@ pub async fn get_albums_for_genre(
         SELECT 
             al.id as "id",
             al.title as "title",
+            al.localized_title as "localized_title",
             al.date as "date",
             al.url as "url",
             al.rym_url as "rym_url",
@@ -181,6 +184,7 @@ pub async fn get_albums_for_mood(
         SELECT 
             al.id as "id",
             al.title as "title",
+            al.localized_title as "localized_title",
             al.date as "date",
             al.url as "url",
             al.rym_url as "rym_url",

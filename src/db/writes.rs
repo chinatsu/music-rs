@@ -20,6 +20,7 @@ pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
     Ok(Album {
         id: inserted_album.id,
         title: inserted_album.title,
+        localized_title: inserted_album.localized_title,
         artists: Some(artists),
         date: inserted_album.date,
         genres: Some(genres),
@@ -36,8 +37,8 @@ pub async fn register_album(db: &PgPool, album: &NewAlbum) -> Result<Album> {
 async fn add_album(album: &NewAlbum, db: &PgPool) -> Result<InsertedAlbum> {
     let _: std::result::Result<InsertedAlbum, sqlx::Error> = query_as!(
         InsertedAlbum,
-        "INSERT INTO albums(title, date, url, rym_url, score, voters)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        "INSERT INTO albums(title, date, url, rym_url, score, voters, localized_title)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (url) DO UPDATE
         SET title = $1,
             date = $2,
@@ -45,14 +46,16 @@ async fn add_album(album: &NewAlbum, db: &PgPool) -> Result<InsertedAlbum> {
             rym_url = $4,
             score = $5,
             voters = $6,
+            localized_title = $7,
             modified_date = DEFAULT
-        RETURNING id, title, date, url, rym_url, score, voters, modified_date",
+        RETURNING id, title, date, url, rym_url, score, voters, localized_title, modified_date",
         album.album,
         album.date,
         album.url,
         album.rym_url,
         album.score,
-        album.voters
+        album.voters,
+        album.localized_title
     )
     .fetch_one(db)
     .await;

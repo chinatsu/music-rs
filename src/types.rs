@@ -6,6 +6,7 @@ use uuid::Uuid;
 pub struct Album {
     pub id: Uuid,
     pub title: String,
+    pub localized_title: Option<String>,
     pub artists: Option<Vec<Artist>>,
     #[serde(with = "my_date_format")]
     pub date: NaiveDate,
@@ -22,6 +23,7 @@ pub struct Album {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NewAlbum {
     pub album: String,
+    pub localized_title: Option<String>,
     pub artists: Vec<String>,
     #[serde(with = "my_date_format")]
     pub date: NaiveDate,
@@ -38,6 +40,7 @@ pub struct NewAlbum {
 pub struct InsertedAlbum {
     pub id: Uuid,
     pub title: String,
+    pub localized_title: Option<String>,
     #[serde(with = "my_date_format")]
     pub date: NaiveDate,
     pub url: String,
