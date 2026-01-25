@@ -50,14 +50,14 @@ function cleanTrackTitle(uncleanTitle) {
 
   // Check if there's parenthetical content
   const parenMatch = title.match(/^(.+?)\s*\((.+?)\)\s*$/);
-  if (!parenMatch) return title;
+  if (!parenMatch) return (title, null);
 
   const mainTitle = parenMatch[1].trim();
   const parenContent = parenMatch[2].trim();
 
   // Keep if parentheses contain music-related keywords
   if (keepKeywords.test(parenContent)) {
-    return title;
+    return (title, null);
   }
 
   // Check if main title has non-Latin chars and paren content is mostly Latin
@@ -67,11 +67,11 @@ function cleanTrackTitle(uncleanTitle) {
 
   if (hasNonLatin && parenIsLatin) {
     // Likely a translation, remove it
-    return mainTitle;
+    return (mainTitle, parenContent);
   }
 
   // Default: keep the full title to be safe
-  return title;
+  return (title, null);
 }
 
 function getTrackFromUnlinked(track_number, track) {
@@ -79,10 +79,11 @@ function getTrackFromUnlinked(track_number, track) {
   if (split.length == 2) {
     // there is likely an artist and a title here.
     var artist = getArtistFromUnlinked(split[0]);
-    var title = cleanTrackTitle(split[1]);
+    var [title, _] = cleanTrackTitle(split[1]);
     return { track_number, artist, title };
   }
-  return { track_number, title: cleanTrackTitle(track) };
+  var [title, _] = cleanTrackTitle(track);
+  return { track_number, title };
 }
 
 function copyAction(event) {
@@ -90,6 +91,7 @@ function copyAction(event) {
   var media = document.getElementById("media_link_button_container_top");
   var links = JSON.parse(media.dataset.links);
   var album = getAlbumName(document.getElementsByClassName("album_title")[0]);
+  var [album_title, localized_title] = cleanTrackTitle(album);
   var rating = document.querySelector('meta[itemprop="ratingValue"]');
   var score = getFloat(rating ? rating.content : "0.0");
   var votes = document.querySelector('meta[itemprop="ratingCount"]');
@@ -116,7 +118,7 @@ function copyAction(event) {
     var artist = song.querySelector(".artist");
     var title = song.querySelector(".song");
     if (artist && title) {
-      var songtitle = cleanTrackTitle(title.textContent.replace(" - ", ""));
+      var [songtitle, _] = cleanTrackTitle(title.textContent.replace(" - ", ""));
       return {
         track_number: idx + 1,
         artist: getArtistFromUnlinked(artist.textContent),
@@ -124,9 +126,10 @@ function copyAction(event) {
       };
     }
     if (title) {
+      [songtitle, _] = cleanTrackTitle(title.textContent);
       return {
         track_number: idx + 1,
-        title: cleanTrackTitle(title.textContent),
+        title: songtitle,
       };
     }
     // at this point, we know the element is plaintext
@@ -151,7 +154,8 @@ function copyAction(event) {
   }
   var post = {
     artists,
-    album,
+    album: album_title,
+    localized_title,
     date,
     genres,
     moods,
