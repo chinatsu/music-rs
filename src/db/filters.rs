@@ -42,9 +42,8 @@ pub fn apply_date_range_filter(
 
 pub fn apply_url_filter(builder: &mut QueryBuilder<Postgres>, url: Option<String>) {
     if let Some(url) = url {
-        builder.push(" AND al.url LIKE '%");
-        builder.push_bind(url);
-        builder.push("%' ");
+        builder.push(" AND al.url LIKE ");
+        builder.push_bind(format!("%{}%", url));
     }
 }
 
