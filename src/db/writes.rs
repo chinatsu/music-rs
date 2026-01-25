@@ -149,12 +149,13 @@ async fn add_tracks(album_id: Uuid, tracks: &[NewTrack], db: &PgPool) -> Result<
             None
         };
         sqlx::query!(
-            "INSERT INTO tracks(album_id, track_number, title, artist) 
-            VALUES ($1, $2, $3, $4)",
+            "INSERT INTO tracks(album_id, track_number, title, artist, localized_title)
+            VALUES ($1, $2, $3, $4, $5)",
             album_id,
             track.track_number,
             track.title,
-            artist_id
+            artist_id,
+            track.localized_title
         )
         .execute(db)
         .await?;

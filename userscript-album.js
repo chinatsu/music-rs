@@ -26,7 +26,16 @@ function getFloat(val) {
 }
 
 function getArtistName(artist) {
-  return artist.firstChild.textContent.trim();
+  var localized_element = artist.children[0];
+  var localized_name = null;
+  if (
+    localized_element.tagName === "SPAN" &&
+    localized_element.textContent.startsWith("[") &&
+    localized_element.textContent.endsWith("]")
+  ) {
+    localized_name = localized_element.textContent.trim().slice(1, -1);
+  }
+  return { name: artist.firstChild.textContent.trim(), localized_name };
 }
 
 function getAlbumName(album) {
@@ -36,9 +45,13 @@ function getAlbumName(album) {
 function getArtistFromUnlinked(artist_string) {
   if (!artist_string.startsWith("[") && artist_string.endsWith("]")) {
     // we might have a localized name here
-    return artist_string.split("[")[0].trim();
+    var artist_split = artist_string.split("[");
+    return {
+      name: artist_split[0].trim(),
+      localized_name: artist.split[1].trim().slice(0, -1),
+    };
   }
-  return artist_string;
+  return { name: artist_string, localized_name: null };
 }
 
 function cleanTrackTitle(uncleanTitle) {
@@ -77,20 +90,29 @@ function getTrackFromUnlinked(track_number, track) {
   const split = track.split(" - ");
   if (split.length == 2) {
     // there is likely an artist and a title here.
-    var artist = getArtistFromUnlinked(split[0]);
-    var [title, _] = cleanTrackTitle(split[1]);
-    return { track_number, artist, title };
+    var [artist, localized_artist] = getArtistFromUnlinked(split[0]);
+    var [title, localized_title] = cleanTrackTitle(split[1]);
+    return {
+      track_number,
+      artist: { name: artist, localized_name: localized_artist },
+      title,
+      localized_title,
+    };
   }
-  var [title, _] = cleanTrackTitle(track);
-  return { track_number, title };
+  var [title, localized_title] = cleanTrackTitle(track);
+  return { track_number, title, localized_title };
 }
 
 function copyAction(event) {
   var info = document.querySelector("table.album_info");
   var media = document.getElementById("media_link_button_container_top");
   var links = JSON.parse(media.dataset.links);
-  var album = getAlbumName(document.getElementsByClassName("album_title")[0]);
+  var album_element = document.getElementsByClassName("album_title")[0];
+  var album = getAlbumName(album_element);
   var [album_title, localized_title] = cleanTrackTitle(album);
+  if (album_element.children[0].tagName == "SPAN") {
+    localized_title = album_element.children[0].textContent;
+  }
   var rating = document.querySelector('meta[itemprop="ratingValue"]');
   var score = getFloat(rating ? rating.content : "0.0");
   var votes = document.querySelector('meta[itemprop="ratingCount"]');
@@ -117,20 +139,22 @@ function copyAction(event) {
     var artist = song.querySelector(".artist");
     var title = song.querySelector(".song");
     if (artist && title) {
-      var [songtitle, _] = cleanTrackTitle(
+      var [songtitle, localized_title] = cleanTrackTitle(
         title.textContent.replace(" - ", ""),
       );
       return {
         track_number: idx + 1,
         artist: getArtistFromUnlinked(artist.textContent),
         title: songtitle,
+        localized_title,
       };
     }
     if (title) {
-      [songtitle, _] = cleanTrackTitle(title.textContent);
+      [songtitle, localized_title] = cleanTrackTitle(title.textContent);
       return {
         track_number: idx + 1,
         title: songtitle,
+        localized_title,
       };
     }
     // at this point, we know the element is plaintext
