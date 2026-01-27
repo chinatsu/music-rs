@@ -34,7 +34,7 @@ pub async fn get_albums(
                       JOIN moods m ON am.mood_id = m.id
                       WHERE am.album_id = al.id), '[]') as moods,
             COALESCE((SELECT json_agg(jsonb_build_object('id', t.id, 'track_number', t.track_number, 'title', t.title, 'localized_title', t.localized_title, 'artist', 
-                      CASE WHEN t.artist IS NOT NULL THEN jsonb_build_object('id', ta.id, 'name', ta.name) ELSE NULL END) ORDER BY t.track_number)
+                      CASE WHEN t.artist IS NOT NULL THEN jsonb_build_object('id', ta.id, 'name', ta.name, 'localized_name', ta.localized_name) ELSE NULL END) ORDER BY t.track_number)
                       FROM tracks t
                       LEFT JOIN artists ta ON t.artist = ta.id
                       WHERE t.album_id = al.id), '[]') as tracks
@@ -104,7 +104,7 @@ pub async fn get_albums_for_artist(
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name, ar.localized_name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
-            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.id, t.track_number, t.title, t.localized_title, (ta.id, ta.name))) filter (where t.id is not null), '{NULL}'), '{}') as "tracks?: Vec<Track>"
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.id, t.track_number, t.title, t.localized_title, (ta.id, ta.name, ta.localized_name))) filter (where t.id is not null), '{NULL}'), '{}') as "tracks?: Vec<Track>"
         FROM albums al
         LEFT JOIN album_artists aa ON al.id = aa.album_id
         LEFT JOIN artists ar ON aa.artist_id = ar.id
@@ -149,7 +149,7 @@ pub async fn get_albums_for_genre(
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name, ar.localized_name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
-            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.id, t.track_number, t.title, t.localized_title, (ta.id, ta.name))) filter (where t.id is not null), '{NULL}'), '{}') as "tracks?: Vec<Track>"
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.id, t.track_number, t.title, t.localized_title, (ta.id, ta.name, ta.localized_name))) filter (where t.id is not null), '{NULL}'), '{}') as "tracks?: Vec<Track>"
         FROM albums al
         LEFT JOIN album_artists aa ON al.id = aa.album_id
         LEFT JOIN artists ar ON aa.artist_id = ar.id
@@ -194,7 +194,7 @@ pub async fn get_albums_for_mood(
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (ar.id, ar.name, ar.localized_name)) filter (where ar.id is not null), '{NULL}'), '{}') as "artists?: Vec<Artist>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (g.id, g.name)) filter (where g.id is not null), '{NULL}'), '{}') as "genres?: Vec<Genre>",
             COALESCE(NULLIF(ARRAY_AGG(DISTINCT (m.id, m.name)) filter (where m.id is not null), '{NULL}'), '{}') as "moods?: Vec<Mood>",
-            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.id, t.track_number, t.title, t.localized_title, (ta.id, ta.name))) filter (where t.id is not null), '{NULL}'), '{}') as "tracks?: Vec<Track>"
+            COALESCE(NULLIF(ARRAY_AGG(DISTINCT (t.id, t.track_number, t.title, t.localized_title, (ta.id, ta.name, ta.localized_name))) filter (where t.id is not null), '{NULL}'), '{}') as "tracks?: Vec<Track>"
         FROM albums al
         LEFT JOIN album_artists aa ON al.id = aa.album_id
         LEFT JOIN artists ar ON aa.artist_id = ar.id

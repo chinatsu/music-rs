@@ -90,11 +90,11 @@ function getTrackFromUnlinked(track_number, track) {
   const split = track.split(" - ");
   if (split.length == 2) {
     // there is likely an artist and a title here.
-    var [artist, localized_artist] = getArtistFromUnlinked(split[0]);
+    var artist = getArtistFromUnlinked(split[0]);
     var [title, localized_title] = cleanTrackTitle(split[1]);
     return {
       track_number,
-      artist: { name: artist, localized_name: localized_artist },
+      artist,
       title,
       localized_title,
     };
