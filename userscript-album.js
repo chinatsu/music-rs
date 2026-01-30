@@ -29,6 +29,7 @@ function getArtistName(artist) {
   var localized_element = artist.children[0];
   var localized_name = null;
   if (
+    localized_element !== undefined &&
     localized_element.tagName === "SPAN" &&
     localized_element.textContent.startsWith("[") &&
     localized_element.textContent.endsWith("]")
